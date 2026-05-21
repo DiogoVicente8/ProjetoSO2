@@ -4,7 +4,7 @@ Sistema paralelo de analise de logs com implementacoes por processos, Unix Domai
 
 ## Autores
 
-- Nome Completo (email@ufp.edu.pt)
+- Nome Completo
 
 ## Estrutura
 

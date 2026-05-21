@@ -249,7 +249,7 @@ static void consume_line(ConsumerArg *ca, const char *line)
             /* Deteção de brute-force em syslog */
             if (e.is_auth_failure) {
                 /* Extrair IP da mensagem */
-                static char syslog_ip[MAX_IP_LEN];
+                char syslog_ip[MAX_IP_LEN];
                 syslog_ip[0] = '\0';
                 const char *from = strstr(e.message, "from ");
                 if (from) {
@@ -277,6 +277,27 @@ static void consume_line(ConsumerArg *ca, const char *line)
     }
 
     if (types == 0) return;
+
+    /* -------------------------------------------------------------------
+     * Deteção de padrões (Req 2-C obrigatório)
+     * Corre ANTES do filtro de modo para detetar padrões em qualquer modo
+     * ------------------------------------------------------------------- */
+
+    /* 1. Brute-force: falhas de autenticação do mesmo IP */
+    if ((types & EVENT_SECURITY) && ev.severity >= 3 && ip && ts > 0)
+        check_brute_force(ca, ip, ts);
+
+    /* 2. Erros 5xx consecutivos */
+    if (status_code >= 500 && status_code < 600) {
+        ca->consec_5xx++;
+        if (ca->consec_5xx >= CONSEC_5XX_THRESHOLD) {
+            ca->consec_alerts++;
+            ca->consec_5xx = 0;
+        }
+    } else {
+        ca->consec_5xx = 0;
+    }
+
     if (!event_matches_mode(&ev, ca->cfg->mode)) return;
 
     ca->result.lines_total++;
@@ -291,25 +312,6 @@ static void consume_line(ConsumerArg *ca, const char *line)
     }
     if (types & EVENT_SECURITY)    ca->result.security_events++;
     if (types & EVENT_PERFORMANCE) ca->result.perf_events++;
-
-    /* -------------------------------------------------------------------
-     * Deteção de padrões (Req 2-C obrigatório)
-     * ------------------------------------------------------------------- */
-
-    /* 1. Brute-force: falhas de autenticação do mesmo IP */
-    if ((types & EVENT_SECURITY) && ev.severity >= 3 && ip && ts > 0)
-        check_brute_force(ca, ip, ts);
-
-    /* 2. Erros 5xx consecutivos */
-    if (status_code >= 500 && status_code < 600) {
-        ca->consec_5xx++;
-        if (ca->consec_5xx >= CONSEC_5XX_THRESHOLD) {
-            ca->consec_alerts++;
-            ca->consec_5xx = 0;   /* reset após alerta */
-        }
-    } else {
-        ca->consec_5xx = 0;       /* resetar se não for 5xx */
-    }
 }
 
 /* =========================================================================
