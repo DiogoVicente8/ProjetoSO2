@@ -20,6 +20,11 @@ F2A_SRCS    = logAnalyzer_threads.c thread_worker.c dashboard_thread.c
 F2A_OBJS    = $(F2A_SRCS:.c=.o)
 TARGET_T    = logAnalyzer_threads
  
+# Fase 2C — produtor-consumidor com bounded buffer
+F2C_SRCS  = logAnalyzer_pc.c pc_worker.c bounded_buffer.c dashboard_thread.c
+F2C_OBJS  = $(F2C_SRCS:.c=.o)
+TARGET_PC = logAnalyzer_pc
+ 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
     LDFLAGS = -lrt -pthread
@@ -189,10 +194,6 @@ help:
 # -----------------------------------------------------------------------
 # Fase 2C — produtor-consumidor com bounded buffer (Requisito 2-C)
 # -----------------------------------------------------------------------
-F2C_SRCS  = logAnalyzer_pc.c pc_worker.c bounded_buffer.c dashboard_thread.c
-F2C_OBJS  = $(F2C_SRCS:.c=.o)
-TARGET_PC = logAnalyzer_pc
- 
 fase2c: $(TARGET_PC)
  
 $(TARGET_PC): $(SHARED_OBJS) $(F2C_OBJS)
@@ -200,4 +201,3 @@ $(TARGET_PC): $(SHARED_OBJS) $(F2C_OBJS)
 	@echo "✓ Compilado: ./$(TARGET_PC)  (produtor-consumidor — Req 2-C)"
  
 .PHONY: fase2c
- 
