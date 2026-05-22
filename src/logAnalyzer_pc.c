@@ -1,20 +1,20 @@
 /*
- * logAnalyzer_pc.c  —  Fase 2, Requisito C
+ * logAnalyzer_pc.c  —  Fase 2, Requisito C (Versão Otimizada e Segura)
  *
  * Arquitetura Produtor-Consumidor com Bounded Buffer:
- *   P threads produtoras — leem ficheiros e inserem linhas no buffer
- *   C threads consumidoras — retiram do buffer, classificam e detetam padrões
- *   1 thread de dashboard — atualiza progresso em tempo real
+ * P threads produtoras — leem ficheiros e inserem linhas no buffer
+ * C threads consumidoras — retiram do buffer, classificam e detetam padrões
+ * 1 thread de dashboard — atualiza progresso em tempo real com usleep (sem busy waiting)
  *
  * Uso:
- *   ./logAnalyzer_pc <dir> <num_produtores> <modo> [--consumers=C] [--verbose] [--output=f]
+ * ./logAnalyzer_pc <dir> <num_produtores> <modo> [--consumers=C] [--verbose] [--output=f]
  *
  * Syscalls/funções POSIX utilizadas:
- *   open, read, close                        — I/O sem fopen
- *   pthread_create, pthread_join             — criação e espera de threads
- *   pthread_mutex_init/lock/unlock/destroy   — exclusão mútua
- *   sem_init, sem_wait, sem_post, sem_destroy — sincronização do buffer
- *   gettimeofday                             — medição de tempo
+ * open, read, close                        — I/O sem fopen
+ * pthread_create, pthread_join             — criação e espera de threads
+ * pthread_mutex_init/lock/unlock/destroy   — exclusão mútua
+ * sem_init, sem_wait, sem_post, sem_destroy — sincronização do buffer
+ * gettimeofday                             — medição de tempo
  */
 
 #define _GNU_SOURCE
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
      * Divisão balanceada de ficheiros pelos produtores
      * ------------------------------------------------------------------ */
     int *assignment = malloc((size_t)fl->count * sizeof(int));
-    if (!assignment) { perror("malloc"); return EXIT_FAILURE; }
+    if (!assignment) { perror("malloc"); free(fl); return EXIT_FAILURE; }
     split_files_balanced(fl, P, assignment);
 
     /* ------------------------------------------------------------------
      * Bounded Buffer
      * ------------------------------------------------------------------ */
     BoundedBuffer *bb = calloc(1, sizeof(BoundedBuffer));
-    if (!bb) { perror("calloc"); return EXIT_FAILURE; }
+    if (!bb) { perror("calloc"); free(assignment); free(fl); return EXIT_FAILURE; }
     bb_init(bb, C);
 
     /* ------------------------------------------------------------------
@@ -125,11 +125,15 @@ int main(int argc, char *argv[])
     WorkerStatus *statuses  = calloc((size_t)P, sizeof(WorkerStatus));
 
     if (!prod_tids || !cons_tids || !prod_args || !cons_args || !statuses) {
-        perror("malloc"); return EXIT_FAILURE;
+        perror("malloc");
+        exit(EXIT_FAILURE);
     }
 
     pthread_mutex_t status_mutex;
-    pthread_mutex_init(&status_mutex, NULL);
+    if (pthread_mutex_init(&status_mutex, NULL) != 0) {
+        perror("pthread_mutex_init (status)");
+        exit(EXIT_FAILURE);
+    }
 
     /* Estimar linhas por produtor para o dashboard */
     for (int i = 0; i < P; i++) {
@@ -155,7 +159,8 @@ int main(int argc, char *argv[])
     if (!cfg.verbose) {
         dashboard_arg_init(&dash_arg, statuses, P, &status_mutex, t0);
         if (pthread_create(&dash_tid, NULL, dashboard_thread_run, &dash_arg) != 0) {
-            perror("pthread_create (dashboard)"); return EXIT_FAILURE;
+            perror("pthread_create (dashboard)"); 
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -169,7 +174,8 @@ int main(int argc, char *argv[])
         cons_args[i].cfg         = &cfg;
 
         if (pthread_create(&cons_tids[i], NULL, consumer_run, &cons_args[i]) != 0) {
-            perror("pthread_create (consumer)"); return EXIT_FAILURE;
+            perror("pthread_create (consumer)"); 
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -186,7 +192,8 @@ int main(int argc, char *argv[])
         prod_args[i].status_mutex  = &status_mutex;
 
         if (pthread_create(&prod_tids[i], NULL, producer_run, &prod_args[i]) != 0) {
-            perror("pthread_create (producer)"); return EXIT_FAILURE;
+            perror("pthread_create (producer)"); 
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -198,7 +205,7 @@ int main(int argc, char *argv[])
             perror("pthread_join (producer)");
     }
 
-    /* Todos os produtores terminaram — enviar sinal de fim aos consumidores */
+    /* Todos os produtores terminaram — enviar sinal seguro de fim aos consumidores */
     bb_send_eof(bb);
 
     /* ------------------------------------------------------------------
@@ -215,11 +222,11 @@ int main(int argc, char *argv[])
      * Parar thread de dashboard
      * ------------------------------------------------------------------ */
     if (!cfg.verbose) {
-        pthread_mutex_lock(&dash_arg.stop_mutex);
+        if (pthread_mutex_lock(&dash_arg.stop_mutex) != 0) perror("pthread_mutex_lock");
         dash_arg.stop = 1;
-        pthread_mutex_unlock(&dash_arg.stop_mutex);
+        if (pthread_mutex_unlock(&dash_arg.stop_mutex) != 0) perror("pthread_mutex_unlock");
 
-        pthread_join(dash_tid, NULL);
+        if (pthread_join(dash_tid, NULL) != 0) perror("pthread_join (dashboard)");
 
         long errs = 0;
         for (int i = 0; i < C; i++)

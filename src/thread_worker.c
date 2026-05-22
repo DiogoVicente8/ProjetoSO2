@@ -101,8 +101,6 @@ static LogFmt detect_fmt(const char *line)
 static void process_line(const char *line, WorkerResult *res,
                           LocalIPTable *ipt, const Config *cfg)
 {
-    (void)cfg; /* reservado para filtro por modo no futuro */
- 
     LogFmt fmt = detect_fmt(line);
     if (fmt == FMT_UNKNOWN) return;
  
@@ -187,6 +185,14 @@ static void process_file(const char *path, WorkerResult *res,
                 line[lpos] = '\0';
                 res->lines_total++;
                 process_line(line, res, ipt, cfg);
+                
+                /* Otimização: Atualização final da linha residual no dashboard */
+                if (pthread_mutex_lock(status_mutex) == 0) {
+                    status->lines_processed = res->lines_total;
+                    if (status->total_lines > 0)
+                        status->progress_pct = (float)res->lines_total / status->total_lines * 100.0f;
+                    pthread_mutex_unlock(status_mutex);
+                }
             }
             break;
         }
@@ -200,13 +206,18 @@ static void process_file(const char *path, WorkerResult *res,
                     res->lines_total++;
                     process_line(line, res, ipt, cfg);
  
-                    /* Atualizar progresso no status (com mutex) */
-                    pthread_mutex_lock(status_mutex);
-                    status->lines_processed = res->lines_total;
-                    if (status->total_lines > 0)
-                        status->progress_pct =
-                            (float)res->lines_total / status->total_lines * 100.0f;
-                    pthread_mutex_unlock(status_mutex);
+                    /* CORREÇÃO DE PERFORMANCE EXTRAORDINÁRIA:
+                     * Em vez de travar o Mutex a cada linha lida (o que destrói o paralelismo),
+                     * atualizamos o dashboard global apenas a cada 500 linhas de logs. */
+                    if (res->lines_total % 500 == 0) {
+                        if (pthread_mutex_lock(status_mutex) == 0) {
+                            status->lines_processed = res->lines_total;
+                            if (status->total_lines > 0)
+                                status->progress_pct =
+                                    (float)res->lines_total / status->total_lines * 100.0f;
+                            pthread_mutex_unlock(status_mutex);
+                        }
+                    }
                 }
             } else if (lpos < MAX_LINE_LENGTH - 1) {
                 line[lpos++] = c;
@@ -219,22 +230,22 @@ static void process_file(const char *path, WorkerResult *res,
  
 /* =========================================================================
  * thread_worker_run — entry point de cada worker thread
- *
- * Recebe um ThreadArg*, processa todos os ficheiros que lhe foram
- * atribuídos e escreve o resultado em arg->result.
  * ========================================================================= */
 void *thread_worker_run(void *arg)
 {
     ThreadArg *ta = (ThreadArg *)arg;
  
     memset(&ta->result, 0, sizeof(ta->result));
-    ta->result.pid = (pid_t)ta->thread_id; /* identificador desta thread */
+    ta->result.pid = (pid_t)ta->thread_id; 
  
     LocalIPTable ipt;
     memset(&ipt, 0, sizeof(ipt));
  
-    /* Marcar como em execução */
-    pthread_mutex_lock(ta->status_mutex);
+    /* Marcar como em execução (Validando o retorno do Mutex) */
+    if (pthread_mutex_lock(ta->status_mutex) != 0) {
+        perror("pthread_mutex_lock");
+        exit(EXIT_FAILURE);
+    }
     ta->status->state = STATE_WORKING;
     pthread_mutex_unlock(ta->status_mutex);
  
@@ -248,12 +259,13 @@ void *thread_worker_run(void *arg)
     /* Top IP */
     ip_top10(&ipt, &ta->result);
  
-    /* Marcar como concluído */
-    pthread_mutex_lock(ta->status_mutex);
-    ta->status->state          = STATE_DONE;
-    ta->status->progress_pct   = 100.0f;
-    ta->status->lines_processed = ta->result.lines_total;
-    pthread_mutex_unlock(ta->status_mutex);
+    /* Marcar como concluído de forma atómica */
+    if (pthread_mutex_lock(ta->status_mutex) == 0) {
+        ta->status->state          = STATE_DONE;
+        ta->status->progress_pct   = 100.0f;
+        ta->status->lines_processed = ta->result.lines_total;
+        pthread_mutex_unlock(ta->status_mutex);
+    }
  
     return NULL;
 }

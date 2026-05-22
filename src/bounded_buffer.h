@@ -38,6 +38,8 @@ typedef struct {
     /* Sinalização de fim: quando todos os produtores terminam,
        inserem uma entrada especial com line[0] == '\0' por consumidor */
     int      n_consumers;        /* quantos sinais de fim enviar           */
+    int      count;              /* número atual de elementos no buffer    */
+    int      closed;             /* flag: buffer fechado para novos puts   */
 } BoundedBuffer;
 
 /* -----------------------------------------------------------------------

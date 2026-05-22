@@ -1,5 +1,5 @@
 /*
- * logAnalyzer.c  —  Fase 1 completa
+ * logAnalyzer.c  —  Fase 1 completa (Versão Corrigida e Robusta)
  *
  * Requisito A: parse de argumentos CLI
  * Requisito B: N processos filho com fork()/waitpid()
@@ -8,8 +8,8 @@
  * Requisito E: alternativa com Unix Domain Sockets (--sockets)
  *
  * Syscalls usadas:
- *   fork, waitpid, pipe, read, write, open, close, stat, kill, signal
- *   socket, bind, listen, accept, connect, unlink
+ * fork, waitpid, pipe, read, write, open, close, stat, kill, signal
+ * socket, bind, listen, accept, connect, unlink
  */
 
 #define _GNU_SOURCE
@@ -320,20 +320,42 @@ int main(int argc, char *argv[])
         /* E: aceitar cfg.num_procs conexões dos filhos */
         for (int i = 0; i < cfg.num_procs; i++) {
             int cli = accept(server_fd, NULL, NULL);
-            if (cli < 0) { perror("accept"); break; }
+            if (cli < 0) { 
+                /* Se for interrupção de sinal benigno (EINTR), tentamos novamente */
+                if (errno == EINTR) {
+                    i--; 
+                    continue; 
+                }
+                perror("accept"); 
+                
+                /* ERRO CRÍTICO: Matar os processos filhos para evitar órfãos e zombies */
+                for (int j = 0; j < cfg.num_procs; j++) {
+                    kill(pids[j], SIGKILL); 
+                }
+                
+                /* Fechar recursos abertos do Kernel */
+                close(server_fd);
+                unlink(SOCKET_PATH);
+                server_fd = -1;
+                break; 
+            }
+            
             received += collect_from_fd(cli, results + received,
                                         cfg.num_procs - received,
                                         statuses, cfg.num_procs,
                                         t0, cfg.verbose);
             close(cli);
         }
-        close(server_fd);
-        unlink(SOCKET_PATH);
+        
+        /* Encerramento normal do Socket do Servidor */
+        if (server_fd >= 0) {
+            close(server_fd);
+            unlink(SOCKET_PATH);
+        }
     } else {
         /* C: fechar extremidade de escrita no pai */
         close(pipe_wr);
-        received = collect_from_fd(pipe_rd, results, cfg.num_procs,
-                                   statuses, cfg.num_procs, t0, cfg.verbose);
+        received = collect_from_fd(pipe_rd, results, cfg.num_procs, statuses, cfg.num_procs, t0, cfg.verbose);
         close(pipe_rd);
     }
 

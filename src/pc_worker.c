@@ -14,7 +14,7 @@
 #include "worker.h"   /* LogFmt, FMT_* */
 
 /* =========================================================================
- * Deteção de formato (igual à Fase 1)
+ * Deteção de formato
  * ========================================================================= */
 static LogFmt detect_fmt(const char *line)
 {
@@ -41,14 +41,14 @@ void *producer_run(void *arg)
     ProducerArg *pa = (ProducerArg *)arg;
     pa->lines_produced = 0;
 
-    /* Atualizar estado no dashboard */
-    pthread_mutex_lock(pa->status_mutex);
+    /* Atualizar estado no dashboard com trancagem segura de Mutex */
+    if (pthread_mutex_lock(pa->status_mutex) != 0) perror("pthread_mutex_lock");
     pa->status->state = STATE_WORKING;
-    pthread_mutex_unlock(pa->status_mutex);
+    if (pthread_mutex_unlock(pa->status_mutex) != 0) perror("pthread_mutex_unlock");
 
     char rbuf[8192];
     char line[MAX_LINE_LENGTH];
-    int  lpos;
+    int  lpos = 0;
 
     /* Processar todos os ficheiros atribuídos a este produtor */
     for (int i = 0; i < pa->fl->count; i++) {
@@ -63,26 +63,11 @@ void *producer_run(void *arg)
         while (1) {
             nread = read(fd, rbuf, sizeof(rbuf));
             if (nread < 0) {
-                if (errno == EINTR) continue;
-                perror("read"); break;
-            }
-            if (nread == 0) {
-                /* EOF: linha pendente */
-                if (lpos > 0) {
-                    line[lpos] = '\0';
-                    bb_put(pa->bb, line, pa->producer_id);
-                    pa->lines_produced++;
-
-                    pthread_mutex_lock(pa->status_mutex);
-                    pa->status->lines_processed = pa->lines_produced;
-                    if (pa->status->total_lines > 0)
-                        pa->status->progress_pct =
-                            (float)pa->lines_produced /
-                            pa->status->total_lines * 100.0f;
-                    pthread_mutex_unlock(pa->status_mutex);
-                }
+                if (errno == EINTR) continue; /* Interrompido por sinal — re-tentar */
+                perror("read"); 
                 break;
             }
+            if (nread == 0) break; /* Fim do ficheiro (EOF) */
 
             for (ssize_t j = 0; j < nread; j++) {
                 char c = rbuf[j];
@@ -93,15 +78,16 @@ void *producer_run(void *arg)
                         bb_put(pa->bb, line, pa->producer_id);
                         pa->lines_produced++;
 
-                        /* Atualizar progresso a cada 500 linhas */
+                        /* Atualizar progresso a cada 500 linhas de forma atómica */
                         if (pa->lines_produced % 500 == 0) {
-                            pthread_mutex_lock(pa->status_mutex);
-                            pa->status->lines_processed = pa->lines_produced;
-                            if (pa->status->total_lines > 0)
-                                pa->status->progress_pct =
-                                    (float)pa->lines_produced /
-                                    pa->status->total_lines * 100.0f;
-                            pthread_mutex_unlock(pa->status_mutex);
+                            if (pthread_mutex_lock(pa->status_mutex) == 0) {
+                                pa->status->lines_processed = pa->lines_produced;
+                                if (pa->status->total_lines > 0)
+                                    pa->status->progress_pct =
+                                        (float)pa->lines_produced /
+                                        pa->status->total_lines * 100.0f;
+                                pthread_mutex_unlock(pa->status_mutex);
+                            }
                         }
                     }
                 } else if (lpos < MAX_LINE_LENGTH - 1) {
@@ -110,32 +96,41 @@ void *producer_run(void *arg)
             }
         }
 
+        /* Enviar linha residual se o ficheiro não terminar com quebra de linha */
+        if (lpos > 0) {
+            line[lpos] = '\0';
+            lpos = 0;
+            bb_put(pa->bb, line, pa->producer_id);
+            pa->lines_produced++;
+        }
+
         close(fd);
     }
 
-    /* Marcar produtor como concluído */
-    pthread_mutex_lock(pa->status_mutex);
-    pa->status->state        = STATE_DONE;
-    pa->status->progress_pct = 100.0f;
-    pthread_mutex_unlock(pa->status_mutex);
+    /* Marcar produtor como totalmente concluído */
+    if (pthread_mutex_lock(pa->status_mutex) == 0) {
+        pa->status->lines_processed = pa->lines_produced;
+        pa->status->state           = STATE_DONE;
+        pa->status->progress_pct    = 100.0f;
+        pthread_mutex_unlock(pa->status_mutex);
+    }
 
     return NULL;
 }
 
 /* =========================================================================
  * Deteção de brute-force
- * Retorna 1 se este IP ultrapassou o limiar na janela de tempo
  * ========================================================================= */
 static int check_brute_force(ConsumerArg *ca, const char *ip, time_t ts)
 {
     if (!ip || !ip[0]) return 0;
 
-    /* Procurar entrada existente */
+    /* Procurar entrada existente na tabela local do consumidor */
     for (int i = 0; i < ca->bf_used; i++) {
         if (strcmp(ca->bf_table[i].ip, ip) == 0) {
             BruteForceEntry *e = &ca->bf_table[i];
 
-            /* Resetar janela se expirou */
+            /* Resetar janela temporal se expirou */
             if (ts - e->window_start > BRUTE_FORCE_WINDOW_SEC) {
                 e->window_start = ts;
                 e->fail_count   = 1;
@@ -151,7 +146,7 @@ static int check_brute_force(ConsumerArg *ca, const char *ip, time_t ts)
         }
     }
 
-    /* IP novo */
+    /* IP novo — adicionar à tabela se houver espaço */
     if (ca->bf_used < BF_TABLE_SIZE) {
         BruteForceEntry *e = &ca->bf_table[ca->bf_used++];
         snprintf(e->ip, sizeof(e->ip), "%s", ip);
@@ -248,8 +243,7 @@ static void consume_line(ConsumerArg *ca, const char *line)
 
             /* Deteção de brute-force em syslog */
             if (e.is_auth_failure) {
-                /* Extrair IP da mensagem */
-                char syslog_ip[MAX_IP_LEN];
+                static char syslog_ip[MAX_IP_LEN];
                 syslog_ip[0] = '\0';
                 const char *from = strstr(e.message, "from ");
                 if (from) {
@@ -277,27 +271,6 @@ static void consume_line(ConsumerArg *ca, const char *line)
     }
 
     if (types == 0) return;
-
-    /* -------------------------------------------------------------------
-     * Deteção de padrões (Req 2-C obrigatório)
-     * Corre ANTES do filtro de modo para detetar padrões em qualquer modo
-     * ------------------------------------------------------------------- */
-
-    /* 1. Brute-force: falhas de autenticação do mesmo IP */
-    if ((types & EVENT_SECURITY) && ev.severity >= 3 && ip && ts > 0)
-        check_brute_force(ca, ip, ts);
-
-    /* 2. Erros 5xx consecutivos */
-    if (status_code >= 500 && status_code < 600) {
-        ca->consec_5xx++;
-        if (ca->consec_5xx >= CONSEC_5XX_THRESHOLD) {
-            ca->consec_alerts++;
-            ca->consec_5xx = 0;
-        }
-    } else {
-        ca->consec_5xx = 0;
-    }
-
     if (!event_matches_mode(&ev, ca->cfg->mode)) return;
 
     ca->result.lines_total++;
@@ -312,6 +285,25 @@ static void consume_line(ConsumerArg *ca, const char *line)
     }
     if (types & EVENT_SECURITY)    ca->result.security_events++;
     if (types & EVENT_PERFORMANCE) ca->result.perf_events++;
+
+    /* -------------------------------------------------------------------
+     * Deteção de padrões (Req 2-C obrigatório)
+     * ------------------------------------------------------------------- */
+
+    /* 1. Brute-force: falhas de autenticação do mesmo IP */
+    if ((types & EVENT_SECURITY) && ev.severity >= 3 && ip && ts > 0)
+        check_brute_force(ca, ip, ts);
+
+    /* 2. Erros 5xx consecutivos */
+    if (status_code >= 500 && status_code < 600) {
+        ca->consec_5xx++;
+        if (ca->consec_5xx >= CONSEC_5XX_THRESHOLD) {
+            ca->consec_alerts++;
+            ca->consec_5xx = 0;   /* reset após alerta */
+        }
+    } else {
+        ca->consec_5xx = 0;       /* resetar se não for 5xx */
+    }
 }
 
 /* =========================================================================
@@ -330,7 +322,7 @@ void *consumer_run(void *arg)
 
     LogLine entry;
 
-    /* Loop principal: retirar entradas do buffer até receber sinal de fim */
+    /* Loop principal: retirar entradas do buffer até receber sinal de fim (-1) */
     while (bb_get(ca->bb, &entry) == 0) {
         consume_line(ca, entry.line);
     }
