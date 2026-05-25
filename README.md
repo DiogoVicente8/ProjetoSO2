@@ -4,7 +4,8 @@ Sistema paralelo de analise de logs com implementacoes por processos, Unix Domai
 
 ## Autores
 
-- Nome Completo
+- Diogo Vicente- 2024115283
+- João Reis- 2024118534
 
 ## Estrutura
 

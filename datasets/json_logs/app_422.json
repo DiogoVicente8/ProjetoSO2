@@ -1,100 +1,100 @@
-{"timestamp":"2026-05-20T23:55:25Z","level":"CRITICAL","service":"user-service","message":"SSL certificate expired","metadata":{"ip":"10.61.65.91","user_id":8442}}
-{"timestamp":"2026-05-17T04:28:27Z","level":"WARN","service":"load-balancer","message":"Slow query detected: 5176ms","metadata":{"ip":"10.117.102.254","user_id":5888}}
-{"timestamp":"2026-05-17T09:54:03Z","level":"WARN","service":"database-proxy","message":"Rate limit exceeded for user 7152","metadata":{"ip":"10.204.169.170","user_id":5565}}
-{"timestamp":"2026-05-20T22:41:43Z","level":"DEBUG","service":"notification-service","message":"Cache hit for key: 117","metadata":{"ip":"10.212.14.48","user_id":4900}}
-{"timestamp":"2026-05-17T21:16:13Z","level":"INFO","service":"database-proxy","message":"Request processed successfully","metadata":{"ip":"10.13.238.204","user_id":6016}}
-{"timestamp":"2026-05-18T11:47:03Z","level":"ERROR","service":"analytics-engine","message":"Connection timeout after 6039s","metadata":{"ip":"10.76.86.122","user_id":7862}}
-{"timestamp":"2026-05-21T07:39:34Z","level":"CRITICAL","service":"user-service","message":"Segmentation fault in module 3515","metadata":{"ip":"10.72.202.27","user_id":7011}}
-{"timestamp":"2026-05-15T15:18:27Z","level":"CRITICAL","service":"notification-service","message":"SSL certificate expired","metadata":{"ip":"10.117.235.116","user_id":8694}}
-{"timestamp":"2026-05-20T11:48:20Z","level":"WARN","service":"database-proxy","message":"Slow query detected: 3308ms","metadata":{"ip":"10.41.228.177","user_id":9396}}
-{"timestamp":"2026-05-19T20:32:40Z","level":"WARN","service":"database-proxy","message":"Invalid API key provided","metadata":{"ip":"10.115.32.201","user_id":9242}}
-{"timestamp":"2026-05-19T23:57:05Z","level":"ERROR","service":"cache-manager","message":"Payment processing failed","metadata":{"ip":"10.162.202.59","user_id":5242}}
-{"timestamp":"2026-05-14T22:03:45Z","level":"CRITICAL","service":"user-service","message":"Out of memory allocating 6941 bytes","metadata":{"ip":"10.185.248.144","user_id":1738}}
-{"timestamp":"2026-05-20T02:32:33Z","level":"CRITICAL","service":"database-proxy","message":"Out of memory allocating 837 bytes","metadata":{"ip":"10.25.156.34","user_id":1432}}
-{"timestamp":"2026-05-19T20:31:03Z","level":"DEBUG","service":"analytics-engine","message":"Cache miss for key: 8773","metadata":{"ip":"10.88.17.213","user_id":9016}}
-{"timestamp":"2026-05-15T15:28:39Z","level":"WARN","service":"cache-manager","message":"Slow query detected: 9846ms","metadata":{"ip":"10.107.19.112","user_id":6491}}
-{"timestamp":"2026-05-15T16:11:42Z","level":"ERROR","service":"load-balancer","message":"Connection timeout after 9084s","metadata":{"ip":"10.209.9.231","user_id":6612}}
-{"timestamp":"2026-05-20T16:44:19Z","level":"INFO","service":"analytics-engine","message":"User authentication successful","metadata":{"ip":"10.118.88.48","user_id":5854}}
-{"timestamp":"2026-05-16T13:14:32Z","level":"ERROR","service":"payment-gateway","message":"Database connection failed","metadata":{"ip":"10.126.88.5","user_id":8960}}
-{"timestamp":"2026-05-18T17:06:33Z","level":"CRITICAL","service":"user-service","message":"Out of memory allocating 2692 bytes","metadata":{"ip":"10.200.116.15","user_id":3339}}
-{"timestamp":"2026-05-16T07:31:02Z","level":"INFO","service":"analytics-engine","message":"Database query took 1047ms","metadata":{"ip":"10.80.81.209","user_id":5279}}
-{"timestamp":"2026-05-18T11:58:22Z","level":"WARN","service":"cache-manager","message":"Invalid API key provided","metadata":{"ip":"10.182.143.214","user_id":7409}}
-{"timestamp":"2026-05-19T18:16:40Z","level":"WARN","service":"load-balancer","message":"Slow query detected: 8920ms","metadata":{"ip":"10.246.39.220","user_id":2171}}
-{"timestamp":"2026-05-20T18:07:50Z","level":"ERROR","service":"load-balancer","message":"Connection timeout after 1854s","metadata":{"ip":"10.230.178.174","user_id":2810}}
-{"timestamp":"2026-05-20T12:17:40Z","level":"ERROR","service":"notification-service","message":"Connection timeout after 240s","metadata":{"ip":"10.64.228.188","user_id":4193}}
-{"timestamp":"2026-05-15T15:28:26Z","level":"WARN","service":"load-balancer","message":"Slow query detected: 2531ms","metadata":{"ip":"10.127.115.46","user_id":5949}}
-{"timestamp":"2026-05-19T14:36:37Z","level":"WARN","service":"cache-manager","message":"Rate limit exceeded for user 7463","metadata":{"ip":"10.97.167.117","user_id":2834}}
-{"timestamp":"2026-05-15T08:08:59Z","level":"INFO","service":"load-balancer","message":"Database query took 8068ms","metadata":{"ip":"10.28.228.81","user_id":7270}}
-{"timestamp":"2026-05-19T15:41:43Z","level":"DEBUG","service":"load-balancer","message":"Cache miss for key: 3483","metadata":{"ip":"10.234.44.147","user_id":1079}}
-{"timestamp":"2026-05-18T15:33:00Z","level":"CRITICAL","service":"load-balancer","message":"Segmentation fault in module 41","metadata":{"ip":"10.50.162.26","user_id":8243}}
-{"timestamp":"2026-05-17T11:04:01Z","level":"CRITICAL","service":"notification-service","message":"Out of memory allocating 7366 bytes","metadata":{"ip":"10.70.237.138","user_id":8865}}
-{"timestamp":"2026-05-15T23:41:00Z","level":"INFO","service":"analytics-engine","message":"Database query took 2781ms","metadata":{"ip":"10.216.224.40","user_id":3900}}
-{"timestamp":"2026-05-15T03:44:52Z","level":"WARN","service":"analytics-engine","message":"Slow query detected: 3570ms","metadata":{"ip":"10.18.109.240","user_id":7367}}
-{"timestamp":"2026-05-19T01:48:39Z","level":"ERROR","service":"database-proxy","message":"Connection timeout after 4223s","metadata":{"ip":"10.148.230.216","user_id":7796}}
-{"timestamp":"2026-05-16T10:27:17Z","level":"CRITICAL","service":"auth-api","message":"Segmentation fault in module 4659","metadata":{"ip":"10.35.117.13","user_id":7897}}
-{"timestamp":"2026-05-19T17:05:25Z","level":"WARN","service":"load-balancer","message":"Invalid API key provided","metadata":{"ip":"10.79.199.226","user_id":7105}}
-{"timestamp":"2026-05-21T16:08:54Z","level":"CRITICAL","service":"notification-service","message":"SSL certificate expired","metadata":{"ip":"10.203.3.121","user_id":1567}}
-{"timestamp":"2026-05-18T00:33:12Z","level":"CRITICAL","service":"load-balancer","message":"Segmentation fault in module 9842","metadata":{"ip":"10.88.153.14","user_id":8558}}
-{"timestamp":"2026-05-19T02:54:22Z","level":"INFO","service":"user-service","message":"Request processed successfully","metadata":{"ip":"10.207.116.146","user_id":8074}}
-{"timestamp":"2026-05-15T21:53:07Z","level":"WARN","service":"auth-api","message":"Slow query detected: 6286ms","metadata":{"ip":"10.69.163.223","user_id":4791}}
-{"timestamp":"2026-05-17T01:01:30Z","level":"CRITICAL","service":"analytics-engine","message":"Segmentation fault in module 474","metadata":{"ip":"10.165.68.22","user_id":3965}}
-{"timestamp":"2026-05-18T01:24:46Z","level":"CRITICAL","service":"database-proxy","message":"SSL certificate expired","metadata":{"ip":"10.253.147.116","user_id":6202}}
-{"timestamp":"2026-05-21T04:11:52Z","level":"INFO","service":"load-balancer","message":"User authentication successful","metadata":{"ip":"10.97.241.248","user_id":9702}}
-{"timestamp":"2026-05-18T12:58:44Z","level":"INFO","service":"auth-api","message":"Database query took 6202ms","metadata":{"ip":"10.93.15.118","user_id":5585}}
-{"timestamp":"2026-05-15T18:52:39Z","level":"INFO","service":"payment-gateway","message":"Database query took 2558ms","metadata":{"ip":"10.194.110.180","user_id":1877}}
-{"timestamp":"2026-05-21T05:43:50Z","level":"ERROR","service":"analytics-engine","message":"Database connection failed","metadata":{"ip":"10.114.56.115","user_id":7688}}
-{"timestamp":"2026-05-20T07:03:08Z","level":"ERROR","service":"auth-api","message":"Connection timeout after 9009s","metadata":{"ip":"10.82.193.161","user_id":2388}}
-{"timestamp":"2026-05-21T09:34:29Z","level":"ERROR","service":"payment-gateway","message":"Database connection failed","metadata":{"ip":"10.169.192.116","user_id":1642}}
-{"timestamp":"2026-05-15T08:51:25Z","level":"CRITICAL","service":"cache-manager","message":"SSL certificate expired","metadata":{"ip":"10.96.101.212","user_id":2268}}
-{"timestamp":"2026-05-19T15:00:14Z","level":"DEBUG","service":"payment-gateway","message":"Cache hit for key: 9548","metadata":{"ip":"10.36.197.153","user_id":2439}}
-{"timestamp":"2026-05-16T00:28:55Z","level":"CRITICAL","service":"user-service","message":"Out of memory allocating 2838 bytes","metadata":{"ip":"10.199.85.26","user_id":7854}}
-{"timestamp":"2026-05-19T06:26:49Z","level":"DEBUG","service":"payment-gateway","message":"Cache miss for key: 775","metadata":{"ip":"10.0.120.246","user_id":4190}}
-{"timestamp":"2026-05-15T06:07:00Z","level":"ERROR","service":"load-balancer","message":"Database connection failed","metadata":{"ip":"10.211.76.200","user_id":9380}}
-{"timestamp":"2026-05-15T12:49:10Z","level":"INFO","service":"database-proxy","message":"Database query took 8479ms","metadata":{"ip":"10.132.33.38","user_id":8931}}
-{"timestamp":"2026-05-20T07:12:46Z","level":"DEBUG","service":"database-proxy","message":"Cache hit for key: 5133","metadata":{"ip":"10.37.59.199","user_id":6943}}
-{"timestamp":"2026-05-17T17:12:16Z","level":"WARN","service":"load-balancer","message":"Invalid API key provided","metadata":{"ip":"10.100.157.80","user_id":8729}}
-{"timestamp":"2026-05-20T23:21:49Z","level":"INFO","service":"auth-api","message":"Database query took 921ms","metadata":{"ip":"10.172.132.32","user_id":7941}}
-{"timestamp":"2026-05-19T01:18:30Z","level":"INFO","service":"payment-gateway","message":"Request processed successfully","metadata":{"ip":"10.167.96.87","user_id":7759}}
-{"timestamp":"2026-05-17T19:35:51Z","level":"ERROR","service":"load-balancer","message":"Connection timeout after 8312s","metadata":{"ip":"10.179.79.92","user_id":8722}}
-{"timestamp":"2026-05-21T02:02:37Z","level":"DEBUG","service":"analytics-engine","message":"Cache hit for key: 5616","metadata":{"ip":"10.212.198.253","user_id":4884}}
-{"timestamp":"2026-05-17T04:37:30Z","level":"INFO","service":"analytics-engine","message":"Request processed successfully","metadata":{"ip":"10.10.76.4","user_id":1539}}
-{"timestamp":"2026-05-19T22:32:13Z","level":"INFO","service":"user-service","message":"User authentication successful","metadata":{"ip":"10.75.88.252","user_id":6326}}
-{"timestamp":"2026-05-18T02:50:07Z","level":"ERROR","service":"cache-manager","message":"Payment processing failed","metadata":{"ip":"10.255.86.187","user_id":6211}}
-{"timestamp":"2026-05-14T23:03:35Z","level":"WARN","service":"auth-api","message":"Slow query detected: 8870ms","metadata":{"ip":"10.179.255.169","user_id":5586}}
-{"timestamp":"2026-05-16T03:38:19Z","level":"ERROR","service":"user-service","message":"Payment processing failed","metadata":{"ip":"10.159.135.255","user_id":5899}}
-{"timestamp":"2026-05-15T03:48:23Z","level":"INFO","service":"auth-api","message":"User authentication successful","metadata":{"ip":"10.189.59.147","user_id":7177}}
-{"timestamp":"2026-05-21T08:53:59Z","level":"CRITICAL","service":"auth-api","message":"Segmentation fault in module 3556","metadata":{"ip":"10.187.218.3","user_id":1486}}
-{"timestamp":"2026-05-19T15:07:42Z","level":"INFO","service":"database-proxy","message":"Database query took 4692ms","metadata":{"ip":"10.115.43.123","user_id":6221}}
-{"timestamp":"2026-05-19T04:49:47Z","level":"DEBUG","service":"cache-manager","message":"Cache hit for key: 6917","metadata":{"ip":"10.212.184.69","user_id":1354}}
-{"timestamp":"2026-05-17T07:37:48Z","level":"ERROR","service":"analytics-engine","message":"Database connection failed","metadata":{"ip":"10.14.95.220","user_id":6313}}
-{"timestamp":"2026-05-17T13:37:08Z","level":"INFO","service":"load-balancer","message":"User authentication successful","metadata":{"ip":"10.193.114.74","user_id":2957}}
-{"timestamp":"2026-05-16T21:33:53Z","level":"INFO","service":"load-balancer","message":"Request processed successfully","metadata":{"ip":"10.69.27.246","user_id":9668}}
-{"timestamp":"2026-05-17T06:49:02Z","level":"ERROR","service":"analytics-engine","message":"Connection timeout after 4789s","metadata":{"ip":"10.27.241.165","user_id":5407}}
-{"timestamp":"2026-05-14T21:18:17Z","level":"ERROR","service":"notification-service","message":"Connection timeout after 9561s","metadata":{"ip":"10.72.131.253","user_id":3933}}
-{"timestamp":"2026-05-18T04:51:19Z","level":"ERROR","service":"cache-manager","message":"Connection timeout after 6450s","metadata":{"ip":"10.243.236.120","user_id":3075}}
-{"timestamp":"2026-05-15T08:22:17Z","level":"WARN","service":"payment-gateway","message":"Slow query detected: 4631ms","metadata":{"ip":"10.121.140.182","user_id":2000}}
-{"timestamp":"2026-05-18T02:59:13Z","level":"INFO","service":"database-proxy","message":"Database query took 3494ms","metadata":{"ip":"10.3.53.39","user_id":9961}}
-{"timestamp":"2026-05-20T02:08:40Z","level":"ERROR","service":"user-service","message":"Payment processing failed","metadata":{"ip":"10.30.44.222","user_id":7873}}
-{"timestamp":"2026-05-21T14:03:17Z","level":"ERROR","service":"analytics-engine","message":"Payment processing failed","metadata":{"ip":"10.80.196.169","user_id":8599}}
-{"timestamp":"2026-05-19T09:14:01Z","level":"ERROR","service":"user-service","message":"Database connection failed","metadata":{"ip":"10.237.8.136","user_id":4641}}
-{"timestamp":"2026-05-17T19:19:45Z","level":"DEBUG","service":"payment-gateway","message":"Cache hit for key: 950","metadata":{"ip":"10.221.188.77","user_id":1633}}
-{"timestamp":"2026-05-21T05:44:30Z","level":"INFO","service":"payment-gateway","message":"User authentication successful","metadata":{"ip":"10.65.160.104","user_id":9431}}
-{"timestamp":"2026-05-21T15:27:13Z","level":"WARN","service":"notification-service","message":"Invalid API key provided","metadata":{"ip":"10.182.143.11","user_id":1446}}
-{"timestamp":"2026-05-16T14:11:23Z","level":"INFO","service":"notification-service","message":"User authentication successful","metadata":{"ip":"10.153.138.144","user_id":9679}}
-{"timestamp":"2026-05-19T18:15:48Z","level":"CRITICAL","service":"cache-manager","message":"SSL certificate expired","metadata":{"ip":"10.208.196.170","user_id":5608}}
-{"timestamp":"2026-05-20T06:18:27Z","level":"ERROR","service":"database-proxy","message":"Connection timeout after 111s","metadata":{"ip":"10.168.221.119","user_id":6328}}
-{"timestamp":"2026-05-15T18:58:27Z","level":"DEBUG","service":"database-proxy","message":"Cache hit for key: 538","metadata":{"ip":"10.217.225.73","user_id":9879}}
-{"timestamp":"2026-05-19T17:54:03Z","level":"DEBUG","service":"auth-api","message":"Cache hit for key: 7201","metadata":{"ip":"10.91.221.73","user_id":5304}}
-{"timestamp":"2026-05-18T02:25:33Z","level":"WARN","service":"user-service","message":"Rate limit exceeded for user 9791","metadata":{"ip":"10.247.203.206","user_id":8181}}
-{"timestamp":"2026-05-16T08:44:58Z","level":"ERROR","service":"user-service","message":"Payment processing failed","metadata":{"ip":"10.54.78.240","user_id":9984}}
-{"timestamp":"2026-05-15T04:23:31Z","level":"DEBUG","service":"notification-service","message":"Cache miss for key: 6807","metadata":{"ip":"10.144.190.188","user_id":5269}}
-{"timestamp":"2026-05-21T17:18:48Z","level":"ERROR","service":"user-service","message":"Connection timeout after 6768s","metadata":{"ip":"10.139.235.146","user_id":5215}}
-{"timestamp":"2026-05-20T22:09:51Z","level":"ERROR","service":"database-proxy","message":"Payment processing failed","metadata":{"ip":"10.57.99.64","user_id":9096}}
-{"timestamp":"2026-05-15T23:25:39Z","level":"DEBUG","service":"payment-gateway","message":"Cache hit for key: 2783","metadata":{"ip":"10.117.246.162","user_id":6449}}
-{"timestamp":"2026-05-20T01:24:53Z","level":"WARN","service":"auth-api","message":"Rate limit exceeded for user 7275","metadata":{"ip":"10.172.69.165","user_id":1468}}
-{"timestamp":"2026-05-16T05:18:21Z","level":"CRITICAL","service":"database-proxy","message":"SSL certificate expired","metadata":{"ip":"10.91.135.229","user_id":9852}}
-{"timestamp":"2026-05-16T01:02:36Z","level":"ERROR","service":"notification-service","message":"Database connection failed","metadata":{"ip":"10.104.219.105","user_id":1850}}
-{"timestamp":"2026-05-21T01:48:14Z","level":"ERROR","service":"payment-gateway","message":"Connection timeout after 1434s","metadata":{"ip":"10.177.246.89","user_id":4626}}
-{"timestamp":"2026-05-17T16:23:39Z","level":"CRITICAL","service":"database-proxy","message":"Segmentation fault in module 6871","metadata":{"ip":"10.108.92.48","user_id":1144}}
-{"timestamp":"2026-05-19T15:32:40Z","level":"DEBUG","service":"user-service","message":"Cache miss for key: 8941","metadata":{"ip":"10.136.88.6","user_id":1725}}
-{"timestamp":"2026-05-18T23:56:34Z","level":"INFO","service":"notification-service","message":"Database query took 1324ms","metadata":{"ip":"10.94.228.255","user_id":8099}}
+{"timestamp":"2026-05-19T01:03:34Z","level":"ERROR","service":"database-proxy","message":"Payment processing failed","metadata":{"ip":"10.62.191.221","user_id":7998}}
+{"timestamp":"2026-05-20T22:34:27Z","level":"ERROR","service":"load-balancer","message":"Connection timeout after 4525s","metadata":{"ip":"10.74.132.123","user_id":4145}}
+{"timestamp":"2026-05-25T03:31:10Z","level":"WARN","service":"analytics-engine","message":"Rate limit exceeded for user 3890","metadata":{"ip":"10.167.100.227","user_id":5045}}
+{"timestamp":"2026-05-24T05:34:23Z","level":"DEBUG","service":"user-service","message":"Cache miss for key: 4936","metadata":{"ip":"10.189.130.53","user_id":7629}}
+{"timestamp":"2026-05-20T22:26:35Z","level":"DEBUG","service":"payment-gateway","message":"Cache hit for key: 6461","metadata":{"ip":"10.210.30.178","user_id":3048}}
+{"timestamp":"2026-05-23T20:29:53Z","level":"WARN","service":"load-balancer","message":"Invalid API key provided","metadata":{"ip":"10.58.83.112","user_id":9773}}
+{"timestamp":"2026-05-24T18:05:34Z","level":"DEBUG","service":"cache-manager","message":"Cache hit for key: 2155","metadata":{"ip":"10.242.2.201","user_id":5912}}
+{"timestamp":"2026-05-19T18:44:57Z","level":"INFO","service":"notification-service","message":"Database query took 3360ms","metadata":{"ip":"10.141.48.208","user_id":5072}}
+{"timestamp":"2026-05-19T22:59:56Z","level":"INFO","service":"auth-api","message":"Request processed successfully","metadata":{"ip":"10.44.50.142","user_id":3816}}
+{"timestamp":"2026-05-25T08:55:58Z","level":"INFO","service":"user-service","message":"User authentication successful","metadata":{"ip":"10.131.146.165","user_id":2549}}
+{"timestamp":"2026-05-20T07:47:42Z","level":"CRITICAL","service":"notification-service","message":"Out of memory allocating 9264 bytes","metadata":{"ip":"10.99.144.38","user_id":3506}}
+{"timestamp":"2026-05-25T02:07:18Z","level":"ERROR","service":"notification-service","message":"Connection timeout after 1273s","metadata":{"ip":"10.217.132.139","user_id":5907}}
+{"timestamp":"2026-05-22T06:01:59Z","level":"CRITICAL","service":"user-service","message":"SSL certificate expired","metadata":{"ip":"10.203.215.192","user_id":5098}}
+{"timestamp":"2026-05-21T05:52:42Z","level":"INFO","service":"auth-api","message":"Request processed successfully","metadata":{"ip":"10.160.37.103","user_id":5792}}
+{"timestamp":"2026-05-21T05:54:48Z","level":"ERROR","service":"payment-gateway","message":"Connection timeout after 3644s","metadata":{"ip":"10.92.236.195","user_id":2861}}
+{"timestamp":"2026-05-25T12:34:44Z","level":"INFO","service":"load-balancer","message":"User authentication successful","metadata":{"ip":"10.108.0.185","user_id":5613}}
+{"timestamp":"2026-05-20T10:27:07Z","level":"ERROR","service":"database-proxy","message":"Connection timeout after 9186s","metadata":{"ip":"10.250.176.30","user_id":7329}}
+{"timestamp":"2026-05-23T06:37:27Z","level":"INFO","service":"payment-gateway","message":"User authentication successful","metadata":{"ip":"10.143.153.171","user_id":6757}}
+{"timestamp":"2026-05-19T17:59:37Z","level":"WARN","service":"analytics-engine","message":"Slow query detected: 8186ms","metadata":{"ip":"10.54.112.96","user_id":6332}}
+{"timestamp":"2026-05-23T15:34:18Z","level":"WARN","service":"notification-service","message":"Rate limit exceeded for user 9143","metadata":{"ip":"10.228.19.244","user_id":3478}}
+{"timestamp":"2026-05-20T10:35:28Z","level":"DEBUG","service":"user-service","message":"Cache hit for key: 9231","metadata":{"ip":"10.9.210.136","user_id":9692}}
+{"timestamp":"2026-05-24T15:47:59Z","level":"CRITICAL","service":"notification-service","message":"SSL certificate expired","metadata":{"ip":"10.106.212.26","user_id":2903}}
+{"timestamp":"2026-05-19T08:17:39Z","level":"INFO","service":"cache-manager","message":"User authentication successful","metadata":{"ip":"10.131.95.162","user_id":8648}}
+{"timestamp":"2026-05-25T13:26:47Z","level":"WARN","service":"payment-gateway","message":"Invalid API key provided","metadata":{"ip":"10.9.145.47","user_id":3099}}
+{"timestamp":"2026-05-22T08:44:48Z","level":"WARN","service":"notification-service","message":"Rate limit exceeded for user 4191","metadata":{"ip":"10.103.62.93","user_id":2613}}
+{"timestamp":"2026-05-21T18:22:37Z","level":"INFO","service":"auth-api","message":"User authentication successful","metadata":{"ip":"10.185.179.130","user_id":1015}}
+{"timestamp":"2026-05-21T16:45:08Z","level":"INFO","service":"load-balancer","message":"User authentication successful","metadata":{"ip":"10.81.50.28","user_id":8205}}
+{"timestamp":"2026-05-23T17:28:25Z","level":"WARN","service":"payment-gateway","message":"Invalid API key provided","metadata":{"ip":"10.197.63.207","user_id":8221}}
+{"timestamp":"2026-05-18T21:37:35Z","level":"CRITICAL","service":"auth-api","message":"Out of memory allocating 4979 bytes","metadata":{"ip":"10.224.181.55","user_id":2768}}
+{"timestamp":"2026-05-23T04:12:35Z","level":"INFO","service":"load-balancer","message":"Request processed successfully","metadata":{"ip":"10.62.174.245","user_id":1780}}
+{"timestamp":"2026-05-25T00:31:34Z","level":"INFO","service":"analytics-engine","message":"Database query took 3943ms","metadata":{"ip":"10.185.226.67","user_id":8344}}
+{"timestamp":"2026-05-20T18:09:23Z","level":"INFO","service":"cache-manager","message":"User authentication successful","metadata":{"ip":"10.254.62.243","user_id":9205}}
+{"timestamp":"2026-05-24T07:02:15Z","level":"DEBUG","service":"cache-manager","message":"Cache miss for key: 3461","metadata":{"ip":"10.43.248.201","user_id":5495}}
+{"timestamp":"2026-05-23T01:50:31Z","level":"WARN","service":"load-balancer","message":"Rate limit exceeded for user 1049","metadata":{"ip":"10.103.103.60","user_id":8733}}
+{"timestamp":"2026-05-19T23:37:07Z","level":"ERROR","service":"notification-service","message":"Database connection failed","metadata":{"ip":"10.141.63.86","user_id":4071}}
+{"timestamp":"2026-05-21T18:39:09Z","level":"INFO","service":"payment-gateway","message":"Request processed successfully","metadata":{"ip":"10.188.221.147","user_id":4892}}
+{"timestamp":"2026-05-24T08:29:04Z","level":"INFO","service":"notification-service","message":"Database query took 9111ms","metadata":{"ip":"10.79.162.208","user_id":8870}}
+{"timestamp":"2026-05-20T03:47:05Z","level":"CRITICAL","service":"analytics-engine","message":"SSL certificate expired","metadata":{"ip":"10.127.229.4","user_id":4219}}
+{"timestamp":"2026-05-22T19:55:22Z","level":"WARN","service":"analytics-engine","message":"Rate limit exceeded for user 1400","metadata":{"ip":"10.135.146.15","user_id":2484}}
+{"timestamp":"2026-05-24T18:37:14Z","level":"INFO","service":"notification-service","message":"Request processed successfully","metadata":{"ip":"10.100.238.31","user_id":6153}}
+{"timestamp":"2026-05-19T14:50:01Z","level":"INFO","service":"payment-gateway","message":"Database query took 5017ms","metadata":{"ip":"10.251.7.82","user_id":2416}}
+{"timestamp":"2026-05-21T04:04:47Z","level":"WARN","service":"cache-manager","message":"Invalid API key provided","metadata":{"ip":"10.67.75.69","user_id":9314}}
+{"timestamp":"2026-05-24T13:20:03Z","level":"DEBUG","service":"auth-api","message":"Cache miss for key: 4082","metadata":{"ip":"10.132.57.216","user_id":1191}}
+{"timestamp":"2026-05-23T11:40:13Z","level":"ERROR","service":"cache-manager","message":"Payment processing failed","metadata":{"ip":"10.168.69.92","user_id":8517}}
+{"timestamp":"2026-05-24T15:17:18Z","level":"ERROR","service":"user-service","message":"Payment processing failed","metadata":{"ip":"10.12.130.87","user_id":3697}}
+{"timestamp":"2026-05-20T18:06:20Z","level":"CRITICAL","service":"cache-manager","message":"Segmentation fault in module 4835","metadata":{"ip":"10.14.166.12","user_id":3205}}
+{"timestamp":"2026-05-25T14:30:37Z","level":"ERROR","service":"database-proxy","message":"Database connection failed","metadata":{"ip":"10.183.184.149","user_id":5731}}
+{"timestamp":"2026-05-21T20:03:24Z","level":"DEBUG","service":"cache-manager","message":"Cache miss for key: 8370","metadata":{"ip":"10.168.255.208","user_id":5524}}
+{"timestamp":"2026-05-24T19:29:59Z","level":"WARN","service":"user-service","message":"Invalid API key provided","metadata":{"ip":"10.36.32.122","user_id":2735}}
+{"timestamp":"2026-05-21T07:48:20Z","level":"DEBUG","service":"user-service","message":"Cache hit for key: 1376","metadata":{"ip":"10.134.64.100","user_id":2783}}
+{"timestamp":"2026-05-22T15:43:45Z","level":"ERROR","service":"payment-gateway","message":"Payment processing failed","metadata":{"ip":"10.240.135.111","user_id":9808}}
+{"timestamp":"2026-05-23T16:25:09Z","level":"CRITICAL","service":"database-proxy","message":"Segmentation fault in module 4776","metadata":{"ip":"10.248.14.143","user_id":9757}}
+{"timestamp":"2026-05-22T10:12:05Z","level":"ERROR","service":"load-balancer","message":"Payment processing failed","metadata":{"ip":"10.33.49.41","user_id":1079}}
+{"timestamp":"2026-05-19T01:06:19Z","level":"INFO","service":"auth-api","message":"Database query took 5388ms","metadata":{"ip":"10.45.82.128","user_id":5160}}
+{"timestamp":"2026-05-20T00:54:28Z","level":"INFO","service":"database-proxy","message":"Database query took 7358ms","metadata":{"ip":"10.238.127.44","user_id":1285}}
+{"timestamp":"2026-05-21T01:34:09Z","level":"CRITICAL","service":"notification-service","message":"SSL certificate expired","metadata":{"ip":"10.159.171.205","user_id":7068}}
+{"timestamp":"2026-05-20T06:49:39Z","level":"CRITICAL","service":"cache-manager","message":"Out of memory allocating 5763 bytes","metadata":{"ip":"10.4.174.79","user_id":5122}}
+{"timestamp":"2026-05-25T11:39:06Z","level":"WARN","service":"analytics-engine","message":"Invalid API key provided","metadata":{"ip":"10.220.36.82","user_id":2366}}
+{"timestamp":"2026-05-25T03:42:53Z","level":"INFO","service":"payment-gateway","message":"Database query took 2067ms","metadata":{"ip":"10.162.105.160","user_id":8010}}
+{"timestamp":"2026-05-21T14:29:32Z","level":"ERROR","service":"load-balancer","message":"Payment processing failed","metadata":{"ip":"10.85.68.77","user_id":6076}}
+{"timestamp":"2026-05-22T05:33:30Z","level":"ERROR","service":"load-balancer","message":"Connection timeout after 8213s","metadata":{"ip":"10.51.97.26","user_id":2673}}
+{"timestamp":"2026-05-25T00:03:40Z","level":"INFO","service":"user-service","message":"Database query took 4423ms","metadata":{"ip":"10.100.230.236","user_id":3829}}
+{"timestamp":"2026-05-24T05:37:45Z","level":"ERROR","service":"cache-manager","message":"Payment processing failed","metadata":{"ip":"10.17.166.52","user_id":5817}}
+{"timestamp":"2026-05-18T22:47:48Z","level":"DEBUG","service":"database-proxy","message":"Cache miss for key: 9918","metadata":{"ip":"10.51.145.27","user_id":6300}}
+{"timestamp":"2026-05-19T17:15:49Z","level":"CRITICAL","service":"notification-service","message":"Out of memory allocating 6000 bytes","metadata":{"ip":"10.83.123.133","user_id":4434}}
+{"timestamp":"2026-05-23T02:45:54Z","level":"ERROR","service":"database-proxy","message":"Payment processing failed","metadata":{"ip":"10.77.217.0","user_id":3785}}
+{"timestamp":"2026-05-20T01:21:38Z","level":"ERROR","service":"cache-manager","message":"Connection timeout after 5516s","metadata":{"ip":"10.253.16.146","user_id":2412}}
+{"timestamp":"2026-05-23T10:21:26Z","level":"DEBUG","service":"notification-service","message":"Cache hit for key: 5827","metadata":{"ip":"10.87.71.230","user_id":3909}}
+{"timestamp":"2026-05-22T03:42:35Z","level":"CRITICAL","service":"payment-gateway","message":"Segmentation fault in module 9298","metadata":{"ip":"10.85.131.71","user_id":6298}}
+{"timestamp":"2026-05-23T17:04:41Z","level":"INFO","service":"payment-gateway","message":"Request processed successfully","metadata":{"ip":"10.159.27.252","user_id":4908}}
+{"timestamp":"2026-05-24T03:59:27Z","level":"ERROR","service":"database-proxy","message":"Database connection failed","metadata":{"ip":"10.220.143.76","user_id":7896}}
+{"timestamp":"2026-05-21T05:47:52Z","level":"CRITICAL","service":"user-service","message":"SSL certificate expired","metadata":{"ip":"10.251.68.173","user_id":4735}}
+{"timestamp":"2026-05-23T01:47:31Z","level":"CRITICAL","service":"auth-api","message":"Segmentation fault in module 1837","metadata":{"ip":"10.165.217.240","user_id":2795}}
+{"timestamp":"2026-05-19T06:05:37Z","level":"WARN","service":"auth-api","message":"Rate limit exceeded for user 6049","metadata":{"ip":"10.140.107.226","user_id":6366}}
+{"timestamp":"2026-05-20T02:58:07Z","level":"WARN","service":"analytics-engine","message":"Invalid API key provided","metadata":{"ip":"10.13.57.152","user_id":4924}}
+{"timestamp":"2026-05-25T09:36:50Z","level":"CRITICAL","service":"database-proxy","message":"Segmentation fault in module 5496","metadata":{"ip":"10.147.217.178","user_id":7011}}
+{"timestamp":"2026-05-22T20:24:05Z","level":"WARN","service":"notification-service","message":"Invalid API key provided","metadata":{"ip":"10.87.107.210","user_id":8589}}
+{"timestamp":"2026-05-21T10:36:37Z","level":"WARN","service":"cache-manager","message":"Invalid API key provided","metadata":{"ip":"10.234.247.77","user_id":1374}}
+{"timestamp":"2026-05-23T12:37:11Z","level":"ERROR","service":"analytics-engine","message":"Database connection failed","metadata":{"ip":"10.29.234.112","user_id":4883}}
+{"timestamp":"2026-05-22T06:38:31Z","level":"INFO","service":"user-service","message":"Request processed successfully","metadata":{"ip":"10.196.38.253","user_id":4392}}
+{"timestamp":"2026-05-21T05:51:41Z","level":"INFO","service":"load-balancer","message":"User authentication successful","metadata":{"ip":"10.213.210.117","user_id":2976}}
+{"timestamp":"2026-05-23T07:36:37Z","level":"ERROR","service":"database-proxy","message":"Database connection failed","metadata":{"ip":"10.199.179.28","user_id":8126}}
+{"timestamp":"2026-05-21T17:53:44Z","level":"INFO","service":"user-service","message":"User authentication successful","metadata":{"ip":"10.168.29.45","user_id":1522}}
+{"timestamp":"2026-05-24T09:01:15Z","level":"WARN","service":"cache-manager","message":"Invalid API key provided","metadata":{"ip":"10.114.87.0","user_id":3712}}
+{"timestamp":"2026-05-25T07:26:51Z","level":"ERROR","service":"cache-manager","message":"Connection timeout after 6350s","metadata":{"ip":"10.243.3.141","user_id":9022}}
+{"timestamp":"2026-05-24T08:21:50Z","level":"DEBUG","service":"payment-gateway","message":"Cache hit for key: 646","metadata":{"ip":"10.185.186.249","user_id":6129}}
+{"timestamp":"2026-05-23T04:13:50Z","level":"ERROR","service":"notification-service","message":"Payment processing failed","metadata":{"ip":"10.143.144.71","user_id":1508}}
+{"timestamp":"2026-05-24T19:27:42Z","level":"CRITICAL","service":"load-balancer","message":"Out of memory allocating 2500 bytes","metadata":{"ip":"10.231.13.151","user_id":2870}}
+{"timestamp":"2026-05-21T15:12:18Z","level":"CRITICAL","service":"database-proxy","message":"SSL certificate expired","metadata":{"ip":"10.68.171.9","user_id":1787}}
+{"timestamp":"2026-05-20T09:13:30Z","level":"DEBUG","service":"database-proxy","message":"Cache miss for key: 3081","metadata":{"ip":"10.99.48.35","user_id":2395}}
+{"timestamp":"2026-05-23T11:57:14Z","level":"ERROR","service":"auth-api","message":"Database connection failed","metadata":{"ip":"10.208.207.99","user_id":3497}}
+{"timestamp":"2026-05-22T07:13:52Z","level":"INFO","service":"cache-manager","message":"Database query took 7221ms","metadata":{"ip":"10.131.33.114","user_id":1295}}
+{"timestamp":"2026-05-20T15:43:19Z","level":"INFO","service":"cache-manager","message":"User authentication successful","metadata":{"ip":"10.34.24.247","user_id":8366}}
+{"timestamp":"2026-05-24T04:50:01Z","level":"DEBUG","service":"database-proxy","message":"Cache miss for key: 2443","metadata":{"ip":"10.124.124.214","user_id":4724}}
+{"timestamp":"2026-05-19T05:47:35Z","level":"DEBUG","service":"database-proxy","message":"Cache miss for key: 7736","metadata":{"ip":"10.104.145.208","user_id":2313}}
+{"timestamp":"2026-05-25T00:27:44Z","level":"CRITICAL","service":"cache-manager","message":"Out of memory allocating 838 bytes","metadata":{"ip":"10.73.110.217","user_id":4264}}
+{"timestamp":"2026-05-23T15:14:56Z","level":"CRITICAL","service":"load-balancer","message":"Segmentation fault in module 267","metadata":{"ip":"10.86.203.111","user_id":9660}}
+{"timestamp":"2026-05-19T10:51:46Z","level":"CRITICAL","service":"load-balancer","message":"SSL certificate expired","metadata":{"ip":"10.75.44.206","user_id":4712}}
+{"timestamp":"2026-05-25T00:22:30Z","level":"CRITICAL","service":"auth-api","message":"SSL certificate expired","metadata":{"ip":"10.90.136.29","user_id":6981}}
+{"timestamp":"2026-05-19T17:03:00Z","level":"ERROR","service":"notification-service","message":"Connection timeout after 183s","metadata":{"ip":"10.5.197.113","user_id":4971}}
