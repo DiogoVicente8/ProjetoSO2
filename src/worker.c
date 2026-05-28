@@ -8,11 +8,11 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "worker.h"
-#include "log_parser.h"
-#include "event_classifier.h"
-#include "ipc.h"
-#include "files.h"
+#include "../include/worker.h"
+#include "../include/log_parser.h"
+#include "../include/event_classifier.h"
+#include "../include/ipc.h"
+#include "../include/files.h"
 
 /* ==========================================================================
  * Tabela de IPs (hash simples para top-IP)

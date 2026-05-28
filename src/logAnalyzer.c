@@ -28,12 +28,12 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include "config.h"
-#include "files.h"
-#include "ipc.h"
-#include "worker.h"
-#include "dashboard.h"
-#include "report.h"
+#include "../include/config.h"
+#include "../include/files.h"
+#include "../include/ipc.h"
+#include "../include/worker.h"
+#include "../include/dashboard.h"
+#include "../include/report.h"
 
 #define SOCKET_PATH "/tmp/loganalyzer.sock"
 
@@ -203,11 +203,7 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
 }
 
 /* ==========================================================================
- * Processo FILHO — Requisitos 3.2 B, 3.3 C e 3.5 E
- *
- * No modo pipes, o filho escreve no descritor herdado após fork().
- * No modo sockets, o filho atua como cliente e liga-se ao servidor do pai.
- * Em ambos os casos usa o mesmo protocolo textual definido em ipc.c.
+ * Processo FILHO — Requisitos B/C/E
  * ========================================================================== */
 static void run_worker(int id, const FileList *fl, const Config *cfg,
                         int write_fd, bool use_sockets)
@@ -297,12 +293,9 @@ int main(int argc, char *argv[])
 
     double t0 = now_secs();
 
-    /* ------------------------------------------------------------------
-     * Requisitos 3.3 C e 3.5 E — escolher mecanismo IPC
-     *
-     * A versão normal usa um pipe anónimo partilhado por todos os filhos.
-     * A versão compilada com -DUSE_SOCKETS usa Unix Domain Sockets.
-     * ------------------------------------------------------------------ */
+    /* ------------------------------------------------------------------ */
+    /* B/C/E. Criar pipe ou socket e fazer fork dos workers               */
+    /* ------------------------------------------------------------------ */
     bool use_sockets = false;
     /* Verificar se --sockets foi pedido: o campo extra pode ser adicionado
        ao Config se necessário; por ora detectamos via variável de ambiente
@@ -315,8 +308,7 @@ int main(int argc, char *argv[])
     int server_fd = -1;
 
     if (use_sockets) {
-        /* Requisito 3.5 E — PAI = servidor Unix Domain Socket:
-         * socket(AF_UNIX), bind(/tmp/loganalyzer.sock) e listen(). */
+        /* E. Unix Domain Socket — PAI = SERVIDOR */
         unlink(SOCKET_PATH);
         server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (server_fd < 0) { perror("socket"); return EXIT_FAILURE; }
@@ -331,16 +323,14 @@ int main(int argc, char *argv[])
         if (listen(server_fd, cfg.num_procs + 2) < 0)
             { perror("listen"); return EXIT_FAILURE; }
     } else {
-        /* Requisito 3.3 C — Pipe anónimo:
-         * todos os filhos escrevem em pipe_wr e o pai lê por pipe_rd. */
+        /* C. Pipe anónimo — todos os filhos escrevem, pai lê */
         int fds[2];
         if (pipe(fds) < 0) { perror("pipe"); return EXIT_FAILURE; }
         pipe_rd = fds[0];
         pipe_wr = fds[1];
     }
 
-    /* Requisito 3.2 B — Criar N processos filho com fork().
-     * Cada filho processa apenas o subset atribuído ao seu worker_id. */
+    /* fork() dos N workers. Cada filho processa parte dos ficheiros. */
     for (int i = 0; i < cfg.num_procs; i++) {
         pid_t pid = fork();
         if (pid < 0) { perror("fork"); return EXIT_FAILURE; }
@@ -367,7 +357,7 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------------ */
     int received = 0;
 
-    /* Requisito 3.5 E — No modo sockets, o pai aceita uma ligação por filho. */
+    /* Se estamos no modo sockets, aceitamos conexões dos filhos. */
     if (use_sockets) {
         /* E: aceitar cfg.num_procs conexões dos filhos */
         for (int i = 0; i < cfg.num_procs; i++) {
@@ -405,8 +395,7 @@ int main(int argc, char *argv[])
             unlink(SOCKET_PATH);
         }
     } else {
-        /* Requisito 3.3 C — No pai, fechar a escrita e recolher
-         * resultados/progresso/eventos enviados por todos os filhos. */
+        /* C: fechar extremidade de escrita no pai */
         close(pipe_wr);
         received = collect_from_fd(pipe_rd, results, cfg.num_procs, statuses, cfg.num_procs, t0, cfg.verbose);
         close(pipe_rd);
@@ -415,7 +404,7 @@ int main(int argc, char *argv[])
     /* ------------------------------------------------------------------ */
     /* B. Aguardar todos os filhos com waitpid()                          */
     /* ------------------------------------------------------------------ */
-    /* Requisito 3.2 B — O pai aguarda a terminação de todos os filhos. */
+    /* Só depois de recolher os dados podemos finalizar corretamente. */
     for (int i = 0; i < cfg.num_procs; i++) {
         int status;
         if (waitpid(pids[i], &status, 0) < 0) perror("waitpid");

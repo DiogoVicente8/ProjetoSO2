@@ -7,13 +7,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "files.h"
+#include "../include/files.h"
 
 /* --------------------------------------------------------------------------
- * Requisito 3.2 B — Processo PAI descobre os ficheiros de log
- *
- * Percorre o diretório recursivamente e recolhe todos os .log/.json para
- * criar a lista de trabalho que será dividida pelos workers.
+ * discover_files  — percorre dir recursivamente, recolhe .log e .json 
+ 
  * -------------------------------------------------------------------------- */
 int discover_files(const char *dir, FileList *fl)
 {
@@ -36,7 +34,7 @@ int discover_files(const char *dir, FileList *fl)
         if (stat(path, &st) < 0) continue;
 
         if (S_ISDIR(st.st_mode)) {
-            /* Recursão: subdirectório */
+            /* Recursão: su<b>directório */ 
             discover_files(path, fl);
 
         } else if (S_ISREG(st.st_mode)) {
@@ -57,10 +55,7 @@ int discover_files(const char *dir, FileList *fl)
 }
 
 /* --------------------------------------------------------------------------
- * Requisito 3.2 B — Divisão de ficheiros entre N processos filho
- *
- * Cada worker recebe um intervalo da lista, processando o seu subconjunto
- * independentemente.
+ * split_files  — divisão round-robin dos ficheiros pelos workers 
  * -------------------------------------------------------------------------- */
 void split_files(const FileList *fl, int worker_id, int num_workers,
                  int *start, int *end)
@@ -79,10 +74,7 @@ void split_files(const FileList *fl, int worker_id, int num_workers,
 }
 
 /* --------------------------------------------------------------------------
- * Requisitos 3.4 D e 8.1 — Estimativa de progresso com I/O POSIX
- *
- * Conta linhas usando open/read/close, sem fopen/fread, para calcular o total
- * esperado de trabalho de cada worker no dashboard.
+ * count_lines  — conta '\n' usando read() (syscall POSIX, sem fopen)
  * -------------------------------------------------------------------------- */
 long count_lines(const char *path)
 {
@@ -102,9 +94,7 @@ long count_lines(const char *path)
 }
 
 /* --------------------------------------------------------------------------
- * Fase 2 — Distribuição balanceada por tamanho estimado
- *
- * Usada pelas versões com threads para equilibrar carga e melhorar throughput.
+ * split_files_balanced — atribuição greedy por tamanho estimado
  * -------------------------------------------------------------------------- */
 void split_files_balanced(const FileList *fl, int num_workers, int *assignment)
 {

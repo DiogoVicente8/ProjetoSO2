@@ -3,13 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ipc.h"
+#include "../include/ipc.h"
 
 /* ==========================================================================
- * Requisito 3.3 C.2 — readn / writen
- *
- * Funções auxiliares obrigatórias para comunicação por pipe/socket. Garantem
- * leitura/escrita completa mesmo com EINTR ou transferências parciais.
+ * readn / writen  — leitura e escrita garantidas 
  * ========================================================================== */
 
 /* Requisito C: ler exatamente N bytes de um pipe/socket, mesmo com interrupções */
@@ -52,8 +49,6 @@ ssize_t writen(int fd, const void *ptr, size_t n)
 }
 
 /* ==========================================================================
- * Requisito 3.3 C — Protocolo de comunicação filho -> pai
- *
  * Serialização do WorkerResult em texto (uma linha terminada em '\n')
  *
  * Formato:
@@ -163,10 +158,7 @@ int worker_result_parse(const char *line, WorkerResult *r)
 }
 
 /* ==========================================================================
- * Requisitos 3.3 C.1 e 2.2 — Agregação de resultados
- *
- * O controlador central consolida os dados recebidos dos workers para gerar
- * o relatório final: linhas, severidades, 4xx/5xx, eventos e Top 10 IPs.
+ * Agregação global
  * ========================================================================== */
 
 static void global_ip_add(GlobalResult *gr, const char *ip, long count)

@@ -26,14 +26,14 @@
 #include <sys/time.h>
 #include <errno.h>
 
-#include "config.h"
-#include "files.h"
-#include "ipc.h"
-#include "dashboard.h"
-#include "dashboard_thread.h"
-#include "report.h"
-#include "bounded_buffer.h"
-#include "pc_worker.h"
+#include "../include/config.h"
+#include "../include/files.h"
+#include "../include/ipc.h"
+#include "../include/dashboard.h"
+#include "../include/dashboard_thread.h"
+#include "../include/report.h"
+#include "../include/bounded_buffer.h"
+#include "../include/pc_worker.h"
 
 /* Número padrão de consumidores se não especificado */
 #define DEFAULT_CONSUMERS 4
@@ -109,10 +109,7 @@ int main(int argc, char *argv[])
     split_files_balanced(fl, P, assignment);
 
     /* ------------------------------------------------------------------
-     * Fase 2 C — Bounded Buffer
-     *
-     * Estrutura partilhada onde produtores inserem linhas e consumidores
-     * retiram linhas para parsing/classificação.
+     * Bounded Buffer
      * ------------------------------------------------------------------ */
     BoundedBuffer *bb = calloc(1, sizeof(BoundedBuffer));
     if (!bb) { perror("calloc"); free(assignment); free(fl); return EXIT_FAILURE; }
@@ -208,8 +205,7 @@ int main(int argc, char *argv[])
             perror("pthread_join (producer)");
     }
 
-    /* Fase 2 C — Todos os produtores terminaram; acordar consumidores e
-     * sinalizar fim de dados sem deixar threads bloqueadas em sem_wait(). */
+    /* Todos os produtores terminaram — enviar sinal seguro de fim aos consumidores */
     bb_send_eof(bb);
 
     /* ------------------------------------------------------------------
