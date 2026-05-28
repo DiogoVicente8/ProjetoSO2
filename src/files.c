@@ -10,7 +10,10 @@
 #include "files.h"
 
 /* --------------------------------------------------------------------------
- * discover_files  — percorre dir recursivamente, recolhe .log e .json
+ * Requisito 3.2 B — Processo PAI descobre os ficheiros de log
+ *
+ * Percorre o diretório recursivamente e recolhe todos os .log/.json para
+ * criar a lista de trabalho que será dividida pelos workers.
  * -------------------------------------------------------------------------- */
 int discover_files(const char *dir, FileList *fl)
 {
@@ -54,7 +57,10 @@ int discover_files(const char *dir, FileList *fl)
 }
 
 /* --------------------------------------------------------------------------
- * split_files  — divisão round-robin dos ficheiros pelos workers
+ * Requisito 3.2 B — Divisão de ficheiros entre N processos filho
+ *
+ * Cada worker recebe um intervalo da lista, processando o seu subconjunto
+ * independentemente.
  * -------------------------------------------------------------------------- */
 void split_files(const FileList *fl, int worker_id, int num_workers,
                  int *start, int *end)
@@ -73,7 +79,10 @@ void split_files(const FileList *fl, int worker_id, int num_workers,
 }
 
 /* --------------------------------------------------------------------------
- * count_lines  — conta '\n' usando read() (syscall POSIX, sem fopen)
+ * Requisitos 3.4 D e 8.1 — Estimativa de progresso com I/O POSIX
+ *
+ * Conta linhas usando open/read/close, sem fopen/fread, para calcular o total
+ * esperado de trabalho de cada worker no dashboard.
  * -------------------------------------------------------------------------- */
 long count_lines(const char *path)
 {
@@ -93,7 +102,9 @@ long count_lines(const char *path)
 }
 
 /* --------------------------------------------------------------------------
- * split_files_balanced — atribuição greedy por tamanho estimado
+ * Fase 2 — Distribuição balanceada por tamanho estimado
+ *
+ * Usada pelas versões com threads para equilibrar carga e melhorar throughput.
  * -------------------------------------------------------------------------- */
 void split_files_balanced(const FileList *fl, int num_workers, int *assignment)
 {

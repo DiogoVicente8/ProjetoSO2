@@ -1,7 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "config.h"
+#include "../include/config.h"
+
+/* ==========================================================================
+ * Requisito 3.1 A — Interface de linha de comandos
+ *
+ * Valida:
+ *   ./logAnalyzer <diretorio_logs> <num_processos> <modo> [opcoes]
+ * e interpreta --verbose e --output=<ficheiro>. Esta configuração é
+ * reutilizada pelas versões com processos, threads e produtor-consumidor.
+ * ========================================================================== */
 
 void print_usage(const char *prog)
 {

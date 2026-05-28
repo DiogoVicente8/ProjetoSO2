@@ -1,6 +1,6 @@
 // src/event_classifier.c
 #define _GNU_SOURCE  
-#include "event_classifier.h"
+#include "../include/event_classifier.h"
 #include <string.h>
 #include <strings.h>
 #include <stdarg.h> 

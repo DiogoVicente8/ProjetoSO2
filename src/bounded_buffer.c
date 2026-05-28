@@ -3,10 +3,14 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "bounded_buffer.h"
+#include "../include/bounded_buffer.h"
 
 /* =========================================================================
- * bb_init
+ * Fase 2 C — Bounded Buffer produtor-consumidor
+ *
+ * Inicializa o buffer circular partilhado entre produtores e consumidores.
+ * sem_empty conta espaços livres, sem_full conta itens disponíveis e mutex
+ * protege head/tail/count contra race conditions.
  * ========================================================================= */
 void bb_init(BoundedBuffer *bb, int n_consumers)
 {

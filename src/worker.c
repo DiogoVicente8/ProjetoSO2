@@ -22,6 +22,7 @@
 typedef struct { char ip[MAX_IP_LEN]; long count; } IPEntry;
 typedef struct { IPEntry e[IP_TABLE]; int used; } IPTable;
 
+/* Requisito C: adicionar ou atualizar contagem de IP para este worker */
 static void ip_add(IPTable *t, const char *ip)
 {
     if (!ip || !ip[0]) return;
@@ -35,6 +36,7 @@ static void ip_add(IPTable *t, const char *ip)
     }
 }
 
+/* Encontrar o IP mais frequente na tabela, usado se top10 não tiver dados */
 static void ip_top(const IPTable *t, char *out_ip, long *out_count)
 {
     *out_count = 0; out_ip[0] = '\0';
@@ -73,6 +75,7 @@ static void ip_top10(const IPTable *t, WorkerResult *res)
     }
 }
 
+/* Requisito D: envia atualizações de progresso do worker ao pai */
 static void send_progress(int fd, long lines)
 {
     if (fd < 0) return;
@@ -87,6 +90,7 @@ static void send_progress(int fd, long lines)
 /* ==========================================================================
  * Deteção de formato
  * ========================================================================== */
+/* Requisito C: deteta automaticamente o formato do ficheiro de log */
 LogFmt detect_format(const char *line)
 {
     if (!line || !line[0]) return FMT_UNKNOWN;
@@ -108,8 +112,12 @@ LogFmt detect_format(const char *line)
 }
 
 /* ==========================================================================
- * Enviar evento verbose ao pai (pipe ou socket)
+ * Requisitos 3.3 C.3 e 3.4 D — Comunicação durante a execução
+ *
+ * Em modo normal são enviados updates de progresso; em --verbose cada evento
+ * HIGH/CRITICAL é enviado imediatamente ao pai pelo pipe/socket.
  * ========================================================================== */
+/* Requisito D: transmite eventos críticos em tempo real para diagnóstico */
 static void send_verbose(int fd, const ClassifiedEvent *ev,
                           const char *ip, int event_types)
 {
@@ -133,8 +141,12 @@ static void send_verbose(int fd, const ClassifiedEvent *ev,
 }
 
 /* ==========================================================================
- * Processar um único ficheiro de log
+ * Requisitos 3.2 B e 8.1 — Processar um único ficheiro de log
+ *
+ * O worker usa open/read/close, reconstrói linhas, deteta o formato e extrai
+ * métricas sem usar fopen/fread/fwrite.
  * ========================================================================== */
+/* Requisito C/D: ler linhas, classificar eventos e enviar progresso/verbose */
 static void process_one_file(const char *path, const Config *cfg,
                               int comm_fd, WorkerResult *res, IPTable *ipt)
 {

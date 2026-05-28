@@ -140,7 +140,6 @@ make all sockets
 ./logAnalyzer_sockets ../datasets/nginx 2 full --output=/tmp/la_sockets.json
 ./logAnalyzer_threads ../datasets/json_logs 4 security --output=/tmp/la_threads.json
 ./logAnalyzer_pc ../datasets/apache 2 traffic --consumers=2 --output=/tmp/la_pc.json
-python3 -m json.tool /tmp/la_process.json
 ```
 
 ## Benchmark

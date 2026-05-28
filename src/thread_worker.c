@@ -7,11 +7,11 @@
 #include <errno.h>
 #include <ctype.h>
  
-#include "thread_worker.h"
-#include "log_parser.h"
-#include "event_classifier.h"
-#include "ipc.h"
-#include "files.h"
+#include "../include/thread_worker.h"
+#include "../include/log_parser.h"
+#include "../include/event_classifier.h"
+#include "../include/ipc.h"
+#include "../include/files.h"
  
 /* =========================================================================
  * Tabela de IPs local à thread (sem partilha — cada thread tem a sua)

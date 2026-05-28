@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include "dashboard.h"
-#include "ipc.h"
+#include "../include/dashboard.h"
+#include "../include/ipc.h"
 
 /* Quantas linhas ocupa o dashboard (calculado em dashboard_init) */
 static int g_dash_lines = 0;
@@ -40,7 +40,9 @@ static void make_bar(char *buf, size_t bufsz, float pct, int width)
 }
 
 /* ==========================================================================
- * dashboard_init
+ * Requisito 3.4 D — Dashboard de progresso em tempo real
+ *
+ * Reserva linhas no terminal para permitir redesenho com ANSI escape codes.
  * ========================================================================== */
 void dashboard_init(int n_workers)
 {
@@ -50,7 +52,9 @@ void dashboard_init(int n_workers)
 }
 
 /* ==========================================================================
- * dashboard_draw
+ * Requisito 3.4 D — Atualização visual periódica
+ *
+ * Mostra progresso por worker, progresso total, erros, tempo decorrido e ETA.
  * ========================================================================== */
 void dashboard_draw(WorkerStatus *st, int n, double elapsed,
                     long events_sec, long total_errors)
@@ -81,7 +85,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         "╔══════════════════════════════════════════╗\n"
         "║" C_RESET C_WHITE C_BOLD
         "     LOG ANALYZER - Real-time Monitor     "
-        C_CYAN C_BOLD "║\n"
+           C_CYAN C_BOLD "                          ║\n"
         "╠══════════════════════════════════════════╣\n"
         C_RESET);
 

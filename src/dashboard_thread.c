@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <sys/time.h>
  
-#include "dashboard_thread.h"
-#include "ipc.h"   /* WorkerResult (para contar erros) */
+#include "../include/dashboard_thread.h"
+#include "../include/ipc.h"   
  
 /* -------------------------------------------------------------------------
  * Helper de tempo

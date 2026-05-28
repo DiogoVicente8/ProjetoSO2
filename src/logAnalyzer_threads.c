@@ -23,13 +23,13 @@
 #include <sys/time.h>
 #include <errno.h>
  
-#include "config.h"
-#include "files.h"
-#include "ipc.h"
-#include "dashboard.h"
-#include "dashboard_thread.h"
-#include "report.h"
-#include "thread_worker.h"
+#include "../include/config.h"
+#include "../include/files.h"
+#include "../include/ipc.h"
+#include "../include/dashboard.h"
+#include "../include/dashboard_thread.h"
+#include "../include/report.h"
+#include "../include/thread_worker.h"
  
 /* -------------------------------------------------------------------------
  * Helper de tempo

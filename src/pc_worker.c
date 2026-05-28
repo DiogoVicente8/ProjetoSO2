@@ -8,10 +8,10 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "pc_worker.h"
-#include "log_parser.h"
-#include "event_classifier.h"
-#include "worker.h"   /* LogFmt, FMT_* */
+#include "../include/pc_worker.h"
+#include "../include/log_parser.h"
+#include "../include/event_classifier.h"
+#include "../include/worker.h"   /* LogFmt, FMT_* */
 
 /* =========================================================================
  * Deteção de formato

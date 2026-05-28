@@ -2,6 +2,13 @@
 #include "log_parser.h"
 #include <ctype.h>
 
+/* ==========================================================================
+ * Secção 4 — Formatos de logs suportados
+ *
+ * Parsers para Apache Combined Log, JSON estruturado, Syslog RFC 3164 e
+ * Nginx Error Log. Os workers detetam o formato e chamam a função adequada.
+ * ========================================================================== */
+
 // ============================================================================
 // PARSER: Apache Combined Log (SEM REGEX)
 // ============================================================================
@@ -125,7 +132,7 @@ int parse_apache_log(const char* line, ApacheLogEntry* entry) {
 }
 
 // ============================================================================
-// PARSER: JSON Log (simplificado)
+// PARSER: JSON Log 
 // ============================================================================
 
 static char* extract_json_value(const char* json, const char* key, char* value, size_t max_len) {

@@ -2,7 +2,7 @@
 # Sistemas Operativos — UFP 2026
  
 CC      = gcc
-CFLAGS  = -Wall -Wextra -O2 -I.
+CFLAGS  = -Wall -Wextra -O2 -I. -I../include
  
 # Ficheiros partilhados entre Fase 1 e Fase 2
 SHARED_SRCS = config.c files.c ipc.c dashboard.c report.c \
@@ -45,7 +45,7 @@ GEN_JSON   = $(GEN_DIR)/gen_json
 GEN_SYSLOG = $(GEN_DIR)/gen_syslog
 GEN_NGINX  = $(GEN_DIR)/gen_nginx
  
-.PHONY: all fase1 fase2 sockets generators datasets datasets-large test benchmark clean help
+.PHONY: all fase1 fase2 sockets generators datasets datasets-large test benchmark clean clean-datasets help
  
 # -----------------------------------------------------------------------
 # all: compila tudo
@@ -175,6 +175,10 @@ clean:
 	rm -f $(TARGET) $(TARGET_SOCK) $(TARGET_T) $(TARGET_PC)
 	rm -f $(GEN_APACHE) $(GEN_JSON) $(GEN_SYSLOG) $(GEN_NGINX)
 	@echo "✓ Limpo"
+
+clean-datasets:
+	rm -rf $(DATASET_DIR)
+	@echo "✓ Datasets removidos"
  
 help:
 	@echo "make              — compilar Fase 1 + Fase 2"
@@ -184,6 +188,7 @@ help:
 	@echo "make generators   — compilar geradores de logs"
 	@echo "make datasets     — gerar dados de teste (~1 MB)"
 	@echo "make datasets-large — gerar dados grandes (~100 MB)"
+	@echo "make clean-datasets — remover datasets gerados"
 	@echo "make test         — correr testes automáticos"
 	@echo "make benchmark    — medir speedup Fase1 vs Fase2"
 	@echo ""

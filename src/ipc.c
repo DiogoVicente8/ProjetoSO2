@@ -6,9 +6,13 @@
 #include "ipc.h"
 
 /* ==========================================================================
- * readn / writen  — leitura e escrita garantidas (Requisito C obrigatório)
+ * Requisito 3.3 C.2 — readn / writen
+ *
+ * Funções auxiliares obrigatórias para comunicação por pipe/socket. Garantem
+ * leitura/escrita completa mesmo com EINTR ou transferências parciais.
  * ========================================================================== */
 
+/* Requisito C: ler exatamente N bytes de um pipe/socket, mesmo com interrupções */
 ssize_t readn(int fd, void *ptr, size_t n)
 {
     size_t  nleft = n;
@@ -28,6 +32,7 @@ ssize_t readn(int fd, void *ptr, size_t n)
     return (ssize_t)(n - nleft);
 }
 
+/* Requisito C: escrever exatamente N bytes em um pipe/socket, mesmo em writes parciais */
 ssize_t writen(int fd, const void *ptr, size_t n)
 {
     size_t      nleft = n;
@@ -47,6 +52,8 @@ ssize_t writen(int fd, const void *ptr, size_t n)
 }
 
 /* ==========================================================================
+ * Requisito 3.3 C — Protocolo de comunicação filho -> pai
+ *
  * Serialização do WorkerResult em texto (uma linha terminada em '\n')
  *
  * Formato:
@@ -54,6 +61,7 @@ ssize_t writen(int fd, const void *ptr, size_t n)
  *   CRIT:<n>;4XX:<n>;5XX:<n>;SEC:<n>;PERF:<n>;TOP_IP:<ip>;TOP_N:<n>
  * ========================================================================== */
 
+/* Requisito C: serializa o resultado do worker em um formato de linha única */
 void worker_result_serialize(const WorkerResult *r, char *buf, size_t bufsz)
 {
     int len = snprintf(buf, bufsz,
@@ -125,6 +133,7 @@ static void extract_str(const char *line, const char *key,
     out[i] = '\0';
 }
 
+/* Requisito C: parse da linha RESULT recebida do worker */
 int worker_result_parse(const char *line, WorkerResult *r)
 {
     if (strncmp(line, "RESULT;", 7) != 0) return -1;
@@ -154,7 +163,10 @@ int worker_result_parse(const char *line, WorkerResult *r)
 }
 
 /* ==========================================================================
- * Agregação global
+ * Requisitos 3.3 C.1 e 2.2 — Agregação de resultados
+ *
+ * O controlador central consolida os dados recebidos dos workers para gerar
+ * o relatório final: linhas, severidades, 4xx/5xx, eventos e Top 10 IPs.
  * ========================================================================== */
 
 static void global_ip_add(GlobalResult *gr, const char *ip, long count)
@@ -202,6 +214,7 @@ sort:
     }
 }
 
+/* Agregação final no pai para construir o relatório global */
 void aggregate(const WorkerResult *results, int n, GlobalResult *gr)
 {
     memset(gr, 0, sizeof(GlobalResult));

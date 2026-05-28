@@ -109,7 +109,10 @@ int main(int argc, char *argv[])
     split_files_balanced(fl, P, assignment);
 
     /* ------------------------------------------------------------------
-     * Bounded Buffer
+     * Fase 2 C — Bounded Buffer
+     *
+     * Estrutura partilhada onde produtores inserem linhas e consumidores
+     * retiram linhas para parsing/classificação.
      * ------------------------------------------------------------------ */
     BoundedBuffer *bb = calloc(1, sizeof(BoundedBuffer));
     if (!bb) { perror("calloc"); free(assignment); free(fl); return EXIT_FAILURE; }
@@ -205,7 +208,8 @@ int main(int argc, char *argv[])
             perror("pthread_join (producer)");
     }
 
-    /* Todos os produtores terminaram — enviar sinal seguro de fim aos consumidores */
+    /* Fase 2 C — Todos os produtores terminaram; acordar consumidores e
+     * sinalizar fim de dados sem deixar threads bloqueadas em sem_wait(). */
     bb_send_eof(bb);
 
     /* ------------------------------------------------------------------

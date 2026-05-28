@@ -4,8 +4,8 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include "report.h"
-#include "ipc.h"
+#include "../include/report.h"
+#include "../include/ipc.h"
 
 /* ==========================================================================
  * Relatório no terminal
@@ -21,41 +21,38 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
     printf("╔══════════════════════════════════════════════════╗\n");
     printf("║          LOG ANALYZER  —  Relatorio Final        ║\n");
     printf("╠══════════════════════════════════════════════════╣\n");
-    printf("║  Modo    : %-10s   Workers : %-3d            ║\n",
-           mode_to_string(cfg->mode), cfg->num_procs);
+    printf("║  Modo    : %-10s   Workers : %-3d                ║\n",mode_to_string(cfg->mode), cfg->num_procs);
     printf("╠══════════════════════════════════════════════════╣\n");
     printf("║  PROCESSAMENTO                                   ║\n");
-    printf("║  Linhas totais  : %-10ld                    ║\n", gr->total_lines);
-    printf("║  Linhas parsed  : %-10ld  (%.1f%%)           ║\n",
-           gr->total_parsed, parse_rate);
-    printf("║  Throughput     : %-10.0f linhas/s           ║\n", throughput);
-    printf("║  Tempo total    : %-10.3f s                  ║\n", elapsed);
+    printf("║  Linhas totais  : %-10ld                         ║\n", gr->total_lines);
+    printf("║  Linhas parsed  : %-10ld  (%.1f%%)               ║\n",gr->total_parsed, parse_rate);
+    printf("║  Throughput     : %-10.0f linhas/s               ║\n", throughput);
+    printf("║  Tempo total    : %-10.3f s                      ║\n", elapsed);
     printf("╠══════════════════════════════════════════════════╣\n");
     printf("║  SEVERIDADE                                      ║\n");
-    printf("║  INFO/LOW  : %-10ld                          ║\n", gr->total_info);
-    printf("║  WARN      : %-10ld                          ║\n", gr->total_warn);
-    printf("║  ERROR     : %-10ld                          ║\n", gr->total_error);
-    printf("║  CRITICAL  : %-10ld                          ║\n", gr->total_critical);
+    printf("║  INFO/LOW  : %-10ld                              ║\n", gr->total_info);
+    printf("║  WARN      : %-10ld                              ║\n", gr->total_warn);
+    printf("║  ERROR     : %-10ld                              ║\n", gr->total_error);
+    printf("║  CRITICAL  : %-10ld                              ║\n", gr->total_critical);
     printf("╠══════════════════════════════════════════════════╣\n");
 
     if (cfg->mode == MODE_SECURITY || cfg->mode == MODE_FULL) {
         printf("║  SEGURANCA                                       ║\n");
-        printf("║  Eventos       : %-10ld                      ║\n", gr->total_security);
-        printf("║  Erros 4xx     : %-10ld                      ║\n", gr->total_4xx);
+        printf("║  Eventos       : %-10ld                          ║\n", gr->total_security);
+        printf("║  Erros 4xx     : %-10ld                          ║\n", gr->total_4xx);
         printf("╠══════════════════════════════════════════════════╣\n");
     }
     if (cfg->mode == MODE_PERFORMANCE || cfg->mode == MODE_FULL) {
         printf("║  PERFORMANCE                                     ║\n");
-        printf("║  Eventos       : %-10ld                      ║\n", gr->total_perf);
-        printf("║  Erros 5xx     : %-10ld                      ║\n", gr->total_5xx);
+        printf("║  Eventos       : %-10ld                          ║\n", gr->total_perf);
+        printf("║  Erros 5xx     : %-10ld                          ║\n", gr->total_5xx);
         printf("╠══════════════════════════════════════════════════╣\n");
     }
 
     if (cfg->mode == MODE_TRAFFIC || cfg->mode == MODE_FULL) {
         printf("║  TOP IPs                                         ║\n");
         for (int i = 0; i < TOP_IPS && gr->top_ips[i][0]; i++) {
-            printf("║  %2d. %-22s %10ld req        ║\n",
-                   i + 1, gr->top_ips[i], gr->top_ip_counts[i]);
+            printf("║  %2d. %-22s %10ld req                        ║\n",i + 1, gr->top_ips[i], gr->top_ip_counts[i]);
         }
         printf("╠══════════════════════════════════════════════════╣\n");
     }
