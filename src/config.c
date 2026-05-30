@@ -4,7 +4,7 @@
 #include "../include/config.h"
 
 /* ==========================================================================
- * Requisito 3.1 A — Interface de linha de comandos
+ * REQUISITO A — Interface de linha de comandos
  *
  * Valida:
  *   ./logAnalyzer <diretorio_logs> <num_processos> <modo> [opcoes]
@@ -12,6 +12,7 @@
  * reutilizada pelas versões com processos, threads e produtor-consumidor.
  * ========================================================================== */
 
+/* REQUISITO A: imprime as instruções de uso no stderr */
 void print_usage(const char *prog)
 {
     fprintf(stderr,
@@ -33,6 +34,7 @@ void print_usage(const char *prog)
         prog, MAX_WORKERS, prog, prog, prog);
 }
 
+/* REQUISITO A: converte enum AnalysisMode para string legível */
 const char *mode_to_string(AnalysisMode mode)
 {
     switch (mode) {
@@ -44,6 +46,7 @@ const char *mode_to_string(AnalysisMode mode)
     }
 }
 
+/* REQUISITO A: parseia o argumento <modo> e preenche o enum */
 static int parse_mode(const char *str, AnalysisMode *mode)
 {
     if (strcmp(str, "security")    == 0) { *mode = MODE_SECURITY;    return 0; }
@@ -53,6 +56,8 @@ static int parse_mode(const char *str, AnalysisMode *mode)
     return -1;
 }
 
+/* REQUISITO A: valida e parseia o argumento <num_processos>
+ * — rejeita não-numéricos, < 1 e limita ao MAX_WORKERS */
 static int parse_num_procs(const char *str, int *out)
 {
     for (int i = 0; str[i] != '\0'; i++) {
@@ -76,6 +81,7 @@ static int parse_num_procs(const char *str, int *out)
     return 0;
 }
 
+/* REQUISITO A: parseia opções facultativas --verbose e --output=<ficheiro> */
 static int parse_option(const char *opt, Config *cfg)
 {
     if (strcmp(opt, "--verbose") == 0) {
@@ -100,6 +106,8 @@ static int parse_option(const char *opt, Config *cfg)
     return 0;
 }
 
+/* REQUISITO A: função principal de parse — valida argc mínimo e
+ * delega cada argumento posicional e opção às funções acima */
 int parse_args(int argc, char *argv[], Config *cfg)
 {
     memset(cfg, 0, sizeof(Config));
@@ -110,15 +118,15 @@ int parse_args(int argc, char *argv[], Config *cfg)
         return -1;
     }
 
-    /* arg 1: diretório */
+    /* REQUISITO A: arg 1 — directório de logs */
     strncpy(cfg->log_dir, argv[1], MAX_PATH_LEN - 1);
     cfg->log_dir[MAX_PATH_LEN - 1] = '\0';
 
-    /* arg 2: num_processos */
+    /* REQUISITO A: arg 2 — número de processos worker */
     if (parse_num_procs(argv[2], &cfg->num_procs) < 0)
         return -1;
 
-    /* arg 3: modo */
+    /* REQUISITO A: arg 3 — modo de análise */
     if (parse_mode(argv[3], &cfg->mode) < 0) {
         fprintf(stderr,
             "Erro: modo invalido '%s'. Use: security | performance | traffic | full\n",
@@ -126,7 +134,7 @@ int parse_args(int argc, char *argv[], Config *cfg)
         return -1;
     }
 
-    /* arg 4+: opções */
+    /* REQUISITO A: arg 4+ — opções facultativas */
     for (int i = 4; i < argc; i++) {
         if (parse_option(argv[i], cfg) < 0)
             return -1;
@@ -135,6 +143,7 @@ int parse_args(int argc, char *argv[], Config *cfg)
     return 0;
 }
 
+/* REQUISITO A: imprime a configuração carregada (usado com --verbose) */
 void print_config(const Config *cfg)
 {
     printf("[Configuracao]\n");

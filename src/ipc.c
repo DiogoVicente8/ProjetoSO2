@@ -6,10 +6,16 @@
 #include "../include/ipc.h"
 
 /* ==========================================================================
- * readn / writen  — leitura e escrita garantidas 
+ * REQUISITO C — Comunicação pai-filho via pipe anónimo (readn / writen)
+ *
+ * readn / writen garantem leituras e escritas completas mesmo em caso de
+ * writes parciais ou interrupções por sinais (EINTR).
  * ========================================================================== */
 
-/* Requisito C: ler exatamente N bytes de um pipe/socket, mesmo com interrupções */
+/* REQUISITO C: ler exactamente N bytes de um pipe ou socket.
+ * Repete read() até obter todos os bytes ou atingir EOF.
+ * Trata EINTR transparentemente (sinal interrompeu a syscall).
+ * Syscall: read */
 ssize_t readn(int fd, void *ptr, size_t n)
 {
     size_t  nleft = n;
@@ -29,7 +35,10 @@ ssize_t readn(int fd, void *ptr, size_t n)
     return (ssize_t)(n - nleft);
 }
 
-/* Requisito C: escrever exatamente N bytes em um pipe/socket, mesmo em writes parciais */
+/* REQUISITO C: escrever exactamente N bytes num pipe ou socket.
+ * Repete write() até enviar todos os bytes (handles writes parciais).
+ * Trata EINTR transparentemente.
+ * Syscall: write */
 ssize_t writen(int fd, const void *ptr, size_t n)
 {
     size_t      nleft = n;
@@ -49,14 +58,19 @@ ssize_t writen(int fd, const void *ptr, size_t n)
 }
 
 /* ==========================================================================
- * Serialização do WorkerResult em texto (uma linha terminada em '\n')
+ * REQUISITO C — Serialização / desserialização do WorkerResult
+ *
+ * O resultado de cada worker é serializado numa linha de texto terminada
+ * em '\n' e enviado ao pai via pipe ou socket.
  *
  * Formato:
  *   RESULT;PID:<n>;LINES:<n>;PARSED:<n>;INFO:<n>;WARN:<n>;ERROR:<n>;
  *   CRIT:<n>;4XX:<n>;5XX:<n>;SEC:<n>;PERF:<n>;TOP_IP:<ip>;TOP_N:<n>
+ *   [;IP1:<ip>;IP1_N:<n>;...] (até TOP_IPS entradas)
  * ========================================================================== */
 
-/* Requisito C: serializa o resultado do worker em um formato de linha única */
+/* REQUISITO C: serializa o WorkerResult numa linha de texto única
+ * para envio ao pai pelo pipe ou socket. */
 void worker_result_serialize(const WorkerResult *r, char *buf, size_t bufsz)
 {
     int len = snprintf(buf, bufsz,
@@ -88,6 +102,7 @@ void worker_result_serialize(const WorkerResult *r, char *buf, size_t bufsz)
         r->top_ip[0] ? r->top_ip : "N/A",
         r->top_ip_count);
 
+    /* REQUISITO C: appenda os top IPs ao resultado serializado */
     for (int i = 0; i < TOP_IPS && len > 0 && (size_t)len < bufsz; i++) {
         if (!r->top_ips[i][0]) break;
         len += snprintf(buf + len, bufsz - (size_t)len,
@@ -102,6 +117,10 @@ void worker_result_serialize(const WorkerResult *r, char *buf, size_t bufsz)
         buf[bufsz - 1] = '\0';
     }
 }
+
+/* --------------------------------------------------------------------------
+ * Helpers internos de extracção de campos
+ * -------------------------------------------------------------------------- */
 
 /* Extrai um campo long de "KEY:<valor>;" dentro de uma string */
 static long extract_long(const char *line, const char *key)
@@ -128,25 +147,28 @@ static void extract_str(const char *line, const char *key,
     out[i] = '\0';
 }
 
-/* Requisito C: parse da linha RESULT recebida do worker */
+/* REQUISITO C: desserializa a linha RESULT recebida do worker
+ * e preenche a estrutura WorkerResult no processo pai. */
 int worker_result_parse(const char *line, WorkerResult *r)
 {
     if (strncmp(line, "RESULT;", 7) != 0) return -1;
     memset(r, 0, sizeof(WorkerResult));
 
-    r->pid            = (pid_t)extract_long(line, "PID");
-    r->lines_total    = extract_long(line, "LINES");
-    r->lines_parsed   = extract_long(line, "PARSED");
-    r->count_info     = extract_long(line, "INFO");
-    r->count_warn     = extract_long(line, "WARN");
-    r->count_error    = extract_long(line, "ERROR");
-    r->count_critical = extract_long(line, "CRIT");
-    r->errors_4xx     = extract_long(line, "4XX");
-    r->errors_5xx     = extract_long(line, "5XX");
+    r->pid             = (pid_t)extract_long(line, "PID");
+    r->lines_total     = extract_long(line, "LINES");
+    r->lines_parsed    = extract_long(line, "PARSED");
+    r->count_info      = extract_long(line, "INFO");
+    r->count_warn      = extract_long(line, "WARN");
+    r->count_error     = extract_long(line, "ERROR");
+    r->count_critical  = extract_long(line, "CRIT");
+    r->errors_4xx      = extract_long(line, "4XX");
+    r->errors_5xx      = extract_long(line, "5XX");
     r->security_events = extract_long(line, "SEC");
-    r->perf_events    = extract_long(line, "PERF");
-    r->top_ip_count   = extract_long(line, "TOP_N");
+    r->perf_events     = extract_long(line, "PERF");
+    r->top_ip_count    = extract_long(line, "TOP_N");
     extract_str(line, "TOP_IP", r->top_ip, sizeof(r->top_ip));
+
+    /* REQUISITO C: desserializar top IPs (até TOP_IPS entradas) */
     for (int i = 0; i < TOP_IPS; i++) {
         char key[16];
         snprintf(key, sizeof(key), "IP%d", i + 1);
@@ -158,13 +180,16 @@ int worker_result_parse(const char *line, WorkerResult *r)
 }
 
 /* ==========================================================================
- * Agregação global
+ * REQUISITO C — Agregação global dos WorkerResult no processo pai
  * ========================================================================== */
 
+/* Helper interno: adiciona um IP ao top global, faz merge se já existir
+ * e reordena por contagem descendente (bubble sort simples). */
 static void global_ip_add(GlobalResult *gr, const char *ip, long count)
 {
     if (!ip || !ip[0] || strcmp(ip, "N/A") == 0 || count <= 0) return;
 
+    /* Se o IP já existe, incrementar a contagem */
     for (int i = 0; i < TOP_IPS; i++) {
         if (strcmp(gr->top_ips[i], ip) == 0) {
             gr->top_ip_counts[i] += count;
@@ -172,6 +197,7 @@ static void global_ip_add(GlobalResult *gr, const char *ip, long count)
         }
     }
 
+    /* Se há slot vazio, inserir */
     for (int i = 0; i < TOP_IPS; i++) {
         if (!gr->top_ips[i][0]) {
             strncpy(gr->top_ips[i], ip, MAX_IP_LEN - 1);
@@ -181,6 +207,7 @@ static void global_ip_add(GlobalResult *gr, const char *ip, long count)
         }
     }
 
+    /* Se não há slot vazio, substituir o de menor contagem */
     for (int i = 0; i < TOP_IPS; i++) {
         if (count > gr->top_ip_counts[i]) {
             strncpy(gr->top_ips[i], ip, MAX_IP_LEN - 1);
@@ -191,6 +218,7 @@ static void global_ip_add(GlobalResult *gr, const char *ip, long count)
     }
 
 sort:
+    /* Reordenar por contagem descendente */
     for (int i = 0; i < TOP_IPS - 1; i++) {
         for (int j = i + 1; j < TOP_IPS; j++) {
             if (gr->top_ip_counts[j] > gr->top_ip_counts[i]) {
@@ -206,7 +234,8 @@ sort:
     }
 }
 
-/* Agregação final no pai para construir o relatório global */
+/* REQUISITO C: combina todos os WorkerResult num GlobalResult centralizado.
+ * Chamado pelo pai após receber todos os resultados dos workers. */
 void aggregate(const WorkerResult *results, int n, GlobalResult *gr)
 {
     memset(gr, 0, sizeof(GlobalResult));
@@ -221,6 +250,8 @@ void aggregate(const WorkerResult *results, int n, GlobalResult *gr)
         gr->total_5xx      += results[i].errors_5xx;
         gr->total_security += results[i].security_events;
         gr->total_perf     += results[i].perf_events;
+
+        /* REQUISITO C: merge dos top IPs de cada worker no ranking global */
         for (int j = 0; j < TOP_IPS; j++)
             global_ip_add(gr, results[i].top_ips[j], results[i].top_ip_counts[j]);
         if (!results[i].top_ips[0][0])

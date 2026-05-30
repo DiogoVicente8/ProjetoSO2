@@ -9,10 +9,18 @@
 #include <errno.h>
 #include "../include/files.h"
 
-/* --------------------------------------------------------------------------
- * discover_files  — percorre dir recursivamente, recolhe .log e .json 
- 
- * -------------------------------------------------------------------------- */
+/* ==========================================================================
+ * REQUISITO A / B — Descoberta e distribuição de ficheiros
+ *
+ * discover_files  : percorre o directório recursivamente e recolhe .log e .json
+ * split_files     : divide os ficheiros pelos workers (round-robin)
+ * count_lines     : conta linhas usando syscall read() — sem fopen
+ * split_files_balanced: distribuição greedy por tamanho estimado
+ * ========================================================================== */
+
+/* REQUISITO A: varre o directório (e subdirectórios) e preenche FileList
+ * com os caminhos de todos os ficheiros .log e .json encontrados.
+ * Syscalls: opendir, readdir, stat, closedir */
 int discover_files(const char *dir, FileList *fl)
 {
     DIR *d = opendir(dir);
@@ -34,10 +42,11 @@ int discover_files(const char *dir, FileList *fl)
         if (stat(path, &st) < 0) continue;
 
         if (S_ISDIR(st.st_mode)) {
-            /* Recursão: su<b>directório */ 
+            /* Recursão: subdirectório */
             discover_files(path, fl);
 
         } else if (S_ISREG(st.st_mode)) {
+            /* REQUISITO A: aceitar apenas .log e .json */
             const char *ext = strrchr(entry->d_name, '.');
             if (ext && (strcmp(ext, ".log")  == 0 ||
                         strcmp(ext, ".json") == 0)) {
@@ -54,16 +63,15 @@ int discover_files(const char *dir, FileList *fl)
     return fl->count;
 }
 
-/* --------------------------------------------------------------------------
- * split_files  — divisão round-robin dos ficheiros pelos workers 
- * -------------------------------------------------------------------------- */
+/* REQUISITO B: divide os ficheiros pelos workers usando round-robin.
+ * Os primeiros 'remainder' workers recebem chunk+1 ficheiros,
+ * os restantes recebem chunk ficheiros — distribuição equilibrada. */
 void split_files(const FileList *fl, int worker_id, int num_workers,
                  int *start, int *end)
 {
     int chunk     = fl->count / num_workers;
     int remainder = fl->count % num_workers;
 
-    /* os primeiros 'remainder' workers recebem chunk+1 ficheiros */
     if (worker_id < remainder) {
         *start = worker_id * (chunk + 1);
         *end   = *start + chunk + 1;
@@ -73,9 +81,10 @@ void split_files(const FileList *fl, int worker_id, int num_workers,
     }
 }
 
-/* --------------------------------------------------------------------------
- * count_lines  — conta '\n' usando read() (syscall POSIX, sem fopen)
- * -------------------------------------------------------------------------- */
+/* REQUISITO B / D: conta o número de linhas de um ficheiro usando
+ * apenas syscalls POSIX (open/read/close), sem usar fopen/fread.
+ * Usado para estimar o progresso percentual do dashboard.
+ * Syscalls: open, read, close */
 long count_lines(const char *path)
 {
     int fd = open(path, O_RDONLY);
@@ -93,9 +102,9 @@ long count_lines(const char *path)
     return count > 0 ? count : 1;
 }
 
-/* --------------------------------------------------------------------------
- * split_files_balanced — atribuição greedy por tamanho estimado
- * -------------------------------------------------------------------------- */
+/* REQUISITO B: atribuição greedy de ficheiros por tamanho estimado.
+ * Alternativa ao round-robin — minimiza o desequilíbrio de carga
+ * entre workers quando os ficheiros têm tamanhos muito diferentes. */
 void split_files_balanced(const FileList *fl, int num_workers, int *assignment)
 {
     long loads[MAX_FILES];
@@ -106,6 +115,7 @@ void split_files_balanced(const FileList *fl, int num_workers, int *assignment)
         loads[i] = 0;
 
     for (int i = 0; i < fl->count; i++) {
+        /* Atribuir ao worker com menor carga actual */
         int best = 0;
         for (int w = 1; w < num_workers; w++) {
             if (loads[w] < loads[best])

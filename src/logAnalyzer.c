@@ -38,16 +38,9 @@
 #define SOCKET_PATH "/tmp/loganalyzer.sock"
 
 /* ==========================================================================
- * Helpers de tempo
+ * REQUISITO C / D — Procura o estado do worker a partir do PID
+ * Usado para mapear mensagens IPC ao slot correcto no dashboard
  * ========================================================================== */
-static double now_secs(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (double)tv.tv_sec + (double)tv.tv_usec / 1e6;
-}
-
-/* Requisito C/D: procura o estado do worker a partir do PID */
 static WorkerStatus *find_status_by_pid(WorkerStatus *statuses,
                                         int n_workers, pid_t pid)
 {
@@ -58,29 +51,42 @@ static WorkerStatus *find_status_by_pid(WorkerStatus *statuses,
     return NULL;
 }
 
-/* Requisito E: conecta o worker ao pai usando socket UNIX */
-static int connect_to_parent_socket(void)
+
+/* ==========================================================================
+ * REQUISITO C — Processa a linha RESULT enviada pelo worker (resultado final)
+ * Protocolo: RESULT;PID:<pid>;LINES:<n>;ERR:<e>;...
+ * ========================================================================== */
+static int handle_result_line(const char *line, WorkerResult *results, int received,
+                              int max, WorkerStatus *statuses, int n_workers)
 {
-    int sk = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (sk < 0)
-        return -1;
+    if (received >= max)
+        return 0;
 
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path) - 1);
-
-    for (int tries = 0; tries < 30; tries++) {
-        if (connect(sk, (struct sockaddr *)&addr, sizeof(addr)) == 0)
-            return sk;
-        usleep(100000);
+    worker_result_parse(line, &results[received]);
+    WorkerStatus *status = find_status_by_pid(statuses, n_workers,
+                                             results[received].pid);
+    if (status) {
+        status->lines_processed = results[received].lines_total;
+        status->progress_pct = 100.0f;
+        status->state = STATE_DONE;
     }
-
-    close(sk);
-    return -1;
+    return 1;
+}
+/* ==========================================================================
+ * REQUISITO D — Helper de tempo (usado no dashboard em tempo real)
+ * Syscall: gettimeofday
+ * ========================================================================== */
+static double now_secs(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (double)tv.tv_sec + (double)tv.tv_usec / 1e6;
 }
 
-/* Requisito D: atualiza a barra de progresso com base em mensagens de progresso */
+/* ==========================================================================
+ * REQUISITO D — Atualiza a barra de progresso com mensagens PROGRESS
+ * Protocolo: PROGRESS;PID:<pid>;LINES:<n>
+ * ========================================================================== */
 static void update_worker_progress(const char *line,
                                    WorkerStatus *statuses, int n_workers)
 {
@@ -106,25 +112,10 @@ static void update_worker_progress(const char *line,
     status->state = STATE_WORKING;
 }
 
-/* Requisito C: processa a linha RESULT enviada pelo worker */
-static int handle_result_line(const char *line, WorkerResult *results, int received,
-                              int max, WorkerStatus *statuses, int n_workers)
-{
-    if (received >= max)
-        return 0;
-
-    worker_result_parse(line, &results[received]);
-    WorkerStatus *status = find_status_by_pid(statuses, n_workers,
-                                             results[received].pid);
-    if (status) {
-        status->lines_processed = results[received].lines_total;
-        status->progress_pct = 100.0f;
-        status->state = STATE_DONE;
-    }
-    return 1;
-}
-
-/* Requisito D: imprime eventos verbose em tempo real para diagnóstico */
+/* ==========================================================================
+ * REQUISITO D — Imprime eventos verbose em tempo real (modo --verbose)
+ * Protocolo: VERBOSE;SEV:<sev>;MSG:<msg>;IP:<ip>
+ * ========================================================================== */
 static void print_verbose_event(const char *line)
 {
     char sev[16] = "", msg[320] = "", ip[48] = "";
@@ -139,8 +130,42 @@ static void print_verbose_event(const char *line)
 
     printf("  [%s] %s  (IP: %s)\n", sev, msg, ip);
 }
+/* ==========================================================================
+ * REQUISITO E — Liga o worker ao pai usando Unix Domain Socket
+ * Syscalls: socket, connect, close, usleep
+ * ========================================================================== */
+static int connect_to_parent_socket(void)
+{
+    int sk = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sk < 0)
+        return -1;
 
-/* Requisito C/D: lê dados de pipe/socket e atualiza dashboard periodicamente */
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, SOCKET_PATH, sizeof(addr.sun_path) - 1);
+
+    for (int tries = 0; tries < 30; tries++) {
+        if (connect(sk, (struct sockaddr *)&addr, sizeof(addr)) == 0)
+            return sk;
+        usleep(100000);
+    }
+
+    close(sk);
+    return -1;
+}
+
+
+/* ==========================================================================
+ * REQUISITO C / D / E — Lê dados de pipe ou socket e actualiza o dashboard
+ *
+ * Esta é a função central do processo pai:
+ *   - Lê blocos do fd (pipe_rd ou socket cliente)
+ *   - Monta linhas completas e despacha por tipo de mensagem
+ *   - Redesenha o dashboard a cada 1 segundo
+ *
+ * Syscalls: read
+ * ========================================================================== */
 static int collect_from_fd(int fd, WorkerResult *results, int max,
                             WorkerStatus *statuses, int n_workers,
                             double t0, bool verbose)
@@ -152,7 +177,6 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
     double t_last   = t0;
     long   ev_total = 0;
 
-    /* Ler do pipe/socket em blocos e montar linhas completas. */
     while (received < max) {
         ssize_t n = read(fd, buf, sizeof(buf) - 1);
         if (n < 0) {
@@ -173,16 +197,22 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
                 line[lpos] = '\0';
                 lpos = 0;
 
+                /* --- REQUISITO C: resultado final do worker --- */
                 if (strncmp(line, "RESULT;", 7) == 0) {
                     received += handle_result_line(line, results, received,
                                                    max, statuses, n_workers);
+
+                /* --- REQUISITO D: actualização de progresso --- */
                 } else if (strncmp(line, "PROGRESS;", 9) == 0) {
                     update_worker_progress(line, statuses, n_workers);
+
+                /* --- REQUISITO D: evento verbose --- */
                 } else if (verbose && strncmp(line, "VERBOSE;", 8) == 0) {
                     ev_total++;
                     print_verbose_event(line);
                 }
 
+                /* --- REQUISITO D: refresh do dashboard a cada 1s --- */
                 double t_now = now_secs();
                 if (t_now - t_last >= 1.0) {
                     long errs = 0;
@@ -203,13 +233,19 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
 }
 
 /* ==========================================================================
- * Processo FILHO — Requisitos B/C/E
+ * REQUISITO B / C / E — Processo FILHO (worker)
+ *
+ * Executado após fork(). Obtém o fd de comunicação (pipe ou socket),
+ * processa os ficheiros atribuídos e envia o resultado final ao pai.
+ *
+ * Syscalls: connect (E), write via writen (C/E), exit, close
  * ========================================================================== */
 static void run_worker(int id, const FileList *fl, const Config *cfg,
                         int write_fd, bool use_sockets)
 {
     int comm_fd = write_fd;
 
+    /* --- REQUISITO E: obter fd via socket em vez de pipe --- */
     if (use_sockets) {
         int sk = connect_to_parent_socket();
         if (sk < 0) {
@@ -222,7 +258,7 @@ static void run_worker(int id, const FileList *fl, const Config *cfg,
     /* Processar ficheiros e recolher métricas */
     WorkerResult r = process_files(id, fl, cfg, comm_fd);
 
-    /* Enviar resultado final ao pai */
+    /* --- REQUISITO C / E: enviar resultado final ao pai --- */
     char buf[2048];
     worker_result_serialize(&r, buf, sizeof(buf));
     writen(comm_fd, buf, strlen(buf));
@@ -232,13 +268,14 @@ static void run_worker(int id, const FileList *fl, const Config *cfg,
 }
 
 /* ==========================================================================
- * MAIN — Requisitos A/B/C/D/E
+ * MAIN — Orquestrador (Requisitos A / B / C / D / E)
  * ========================================================================== */
 int main(int argc, char *argv[])
 {
-    /* ------------------------------------------------------------------ */
-    /* A. Parse da linha de comandos                                       */
-    /* ------------------------------------------------------------------ */
+    /* -------------------------------------------------------------------------
+     * REQUISITO A — Parse da linha de comandos
+     * Preenche Config com: directório, num_procs, verbose, output, etc.
+     * ------------------------------------------------------------------------- */
     Config cfg;
     if (parse_args(argc, argv, &cfg) < 0)
         return EXIT_FAILURE;
@@ -246,9 +283,9 @@ int main(int argc, char *argv[])
     if (cfg.verbose)
         print_config(&cfg);
 
-    /* ------------------------------------------------------------------ */
-    /* Descoberta de ficheiros                                             */
-    /* ------------------------------------------------------------------ */
+    /* -------------------------------------------------------------------------
+     * Descoberta de ficheiros (suporte a A/B)
+     * ------------------------------------------------------------------------- */
     FileList *fl = calloc(1, sizeof(FileList));
     if (!fl) { perror("calloc"); return EXIT_FAILURE; }
 
@@ -259,22 +296,22 @@ int main(int argc, char *argv[])
     }
     printf("[INFO] %d ficheiro(s) encontrado(s)\n", fl->count);
 
-    /* Ajustar num_procs se houver menos ficheiros */
+    /* Ajustar num_procs se houver menos ficheiros que workers pedidos */
     if (cfg.num_procs > fl->count) {
         cfg.num_procs = fl->count;
         printf("[INFO] Workers ajustados para %d (nº de ficheiros)\n",
                cfg.num_procs);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Estruturas de controlo                                              */
-    /* ------------------------------------------------------------------ */
+    /* -------------------------------------------------------------------------
+     * Estruturas de controlo partilhadas pelo pai
+     * ------------------------------------------------------------------------- */
     pid_t        *pids     = malloc((size_t)cfg.num_procs * sizeof(pid_t));
     WorkerResult *results  = calloc((size_t)cfg.num_procs, sizeof(WorkerResult));
     WorkerStatus *statuses = calloc((size_t)cfg.num_procs, sizeof(WorkerStatus));
     if (!pids || !results || !statuses) { perror("malloc"); return EXIT_FAILURE; }
 
-    /* Estimar linhas por worker para a barra de progresso */
+    /* REQUISITO D: estimar linhas por worker para a barra de progresso */
     for (int i = 0; i < cfg.num_procs; i++) {
         int s, e;
         split_files(fl, i, cfg.num_procs, &s, &e);
@@ -284,22 +321,17 @@ int main(int argc, char *argv[])
         statuses[i].state       = STATE_IDLE;
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Inicializar dashboard (só no modo normal)                           */
-    /* ------------------------------------------------------------------ */
+    /* REQUISITO D: inicializar dashboard (só no modo normal) */
     if (!cfg.verbose)
         dashboard_init(cfg.num_procs);
     fflush(stdout);
 
     double t0 = now_secs();
 
-    /* ------------------------------------------------------------------ */
-    /* B/C/E. Criar pipe ou socket e fazer fork dos workers               */
-    /* ------------------------------------------------------------------ */
+    /* -------------------------------------------------------------------------
+     * REQUISITO C / E — Criar meio de comunicação IPC
+     * ------------------------------------------------------------------------- */
     bool use_sockets = false;
-    /* Verificar se --sockets foi pedido: o campo extra pode ser adicionado
-       ao Config se necessário; por ora detectamos via variável de ambiente
-       para manter a interface do enunciado intacta.                        */
 #ifdef USE_SOCKETS
     use_sockets = true;
 #endif
@@ -307,8 +339,8 @@ int main(int argc, char *argv[])
     int pipe_rd = -1, pipe_wr = -1;
     int server_fd = -1;
 
+    /* REQUISITO E: Unix Domain Socket — pai actua como servidor */
     if (use_sockets) {
-        /* E. Unix Domain Socket — PAI = SERVIDOR */
         unlink(SOCKET_PATH);
         server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (server_fd < 0) { perror("socket"); return EXIT_FAILURE; }
@@ -322,99 +354,100 @@ int main(int argc, char *argv[])
             { perror("bind");   return EXIT_FAILURE; }
         if (listen(server_fd, cfg.num_procs + 2) < 0)
             { perror("listen"); return EXIT_FAILURE; }
+
+    /* REQUISITO C: pipe anónimo — todos os filhos escrevem, pai lê */
     } else {
-        /* C. Pipe anónimo — todos os filhos escrevem, pai lê */
         int fds[2];
         if (pipe(fds) < 0) { perror("pipe"); return EXIT_FAILURE; }
         pipe_rd = fds[0];
         pipe_wr = fds[1];
     }
 
-    /* fork() dos N workers. Cada filho processa parte dos ficheiros. */
+    /* -------------------------------------------------------------------------
+     * REQUISITO B — fork() dos N workers
+     * Syscalls: fork
+     * ------------------------------------------------------------------------- */
     for (int i = 0; i < cfg.num_procs; i++) {
         pid_t pid = fork();
         if (pid < 0) { perror("fork"); return EXIT_FAILURE; }
 
         if (pid == 0) {
             /* --- FILHO --- */
-            if (!use_sockets) {
-                close(pipe_rd);         /* filho não lê do pipe */
-            } else {
-                close(server_fd);       /* filho não usa o server socket */
-            }
+            if (!use_sockets)
+                close(pipe_rd);     /* filho não lê do pipe */
+            else
+                close(server_fd);   /* filho não usa o server socket */
+
             run_worker(i, fl, &cfg, pipe_wr, use_sockets);
-            /* run_worker chama exit() */
+            /* run_worker termina com exit() — nunca chega aqui */
         }
 
-        /* --- PAI --- */
-        pids[i]             = pid;
-        statuses[i].pid     = pid;
-        statuses[i].state   = STATE_WORKING;
+        /* --- PAI: regista PID e estado inicial --- */
+        pids[i]           = pid;
+        statuses[i].pid   = pid;
+        statuses[i].state = STATE_WORKING;
     }
 
-    /* ------------------------------------------------------------------ */
-    /* PAI: recolher resultados                                            */
-    /* ------------------------------------------------------------------ */
+    /* -------------------------------------------------------------------------
+     * REQUISITO C / E — Pai recolhe resultados dos workers
+     * ------------------------------------------------------------------------- */
     int received = 0;
 
-    /* Se estamos no modo sockets, aceitamos conexões dos filhos. */
+    /* REQUISITO E: aceitar conexões dos filhos (uma por worker) */
     if (use_sockets) {
-        /* E: aceitar cfg.num_procs conexões dos filhos */
         for (int i = 0; i < cfg.num_procs; i++) {
             int cli = accept(server_fd, NULL, NULL);
-            if (cli < 0) { 
-                /* Se for interrupção de sinal benigno (EINTR), tentamos novamente */
-                if (errno == EINTR) {
-                    i--; 
-                    continue; 
-                }
-                perror("accept"); 
-                
-                /* ERRO CRÍTICO: Matar os processos filhos para evitar órfãos e zombies */
-                for (int j = 0; j < cfg.num_procs; j++) {
-                    kill(pids[j], SIGKILL); 
-                }
-                
-                /* Fechar recursos abertos do Kernel */
+            if (cli < 0) {
+                if (errno == EINTR) { i--; continue; }
+                perror("accept");
+
+                /* Erro crítico: matar filhos para evitar zombies */
+                for (int j = 0; j < cfg.num_procs; j++)
+                    kill(pids[j], SIGKILL);
+
                 close(server_fd);
                 unlink(SOCKET_PATH);
                 server_fd = -1;
-                break; 
+                break;
             }
-            
+
             received += collect_from_fd(cli, results + received,
                                         cfg.num_procs - received,
                                         statuses, cfg.num_procs,
                                         t0, cfg.verbose);
             close(cli);
         }
-        
-        /* Encerramento normal do Socket do Servidor */
+
         if (server_fd >= 0) {
             close(server_fd);
             unlink(SOCKET_PATH);
         }
+
+    /* REQUISITO C: ler do pipe até EOF (todos os filhos fecharam a escrita) */
     } else {
-        /* C: fechar extremidade de escrita no pai */
-        close(pipe_wr);
-        received = collect_from_fd(pipe_rd, results, cfg.num_procs, statuses, cfg.num_procs, t0, cfg.verbose);
+        close(pipe_wr); /* pai fecha a extremidade de escrita */
+        received = collect_from_fd(pipe_rd, results, cfg.num_procs,
+                                   statuses, cfg.num_procs, t0, cfg.verbose);
         close(pipe_rd);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* B. Aguardar todos os filhos com waitpid()                          */
-    /* ------------------------------------------------------------------ */
-    /* Só depois de recolher os dados podemos finalizar corretamente. */
+    /* -------------------------------------------------------------------------
+     * REQUISITO B — Aguardar todos os filhos com waitpid()
+     * Syscall: waitpid
+     * Evita processos zombie e garante que os recursos dos filhos são libertados
+     * ------------------------------------------------------------------------- */
     for (int i = 0; i < cfg.num_procs; i++) {
         int status;
         if (waitpid(pids[i], &status, 0) < 0) perror("waitpid");
-        statuses[i].state       = STATE_DONE;
+        statuses[i].state        = STATE_DONE;
         statuses[i].progress_pct = 100.0f;
     }
 
     double elapsed = now_secs() - t0;
 
-    /* Dashboard final */
+    /* -------------------------------------------------------------------------
+     * REQUISITO D — Dashboard final e relatório
+     * ------------------------------------------------------------------------- */
     if (!cfg.verbose) {
         long errs = 0;
         for (int i = 0; i < received; i++)
@@ -423,11 +456,10 @@ int main(int argc, char *argv[])
         dashboard_done(cfg.num_procs);
     }
 
-    /* ------------------------------------------------------------------ */
-    /* Agregar e imprimir relatório                                        */
-    /* ------------------------------------------------------------------ */
-    /* O pai combina os resultados de todos os workers antes de mostrar.
-       Isto garante um relatório global centralizado. */
+    /* -------------------------------------------------------------------------
+     * REQUISITO A — Relatório final (output definido nos argumentos CLI)
+     * aggregate() combina todos os WorkerResult num GlobalResult centralizado
+     * ------------------------------------------------------------------------- */
     GlobalResult gr;
     aggregate(results, received, &gr);
 
@@ -436,9 +468,9 @@ int main(int argc, char *argv[])
     if (cfg.has_output)
         write_report_json(&gr, &cfg, elapsed, cfg.output_file);
 
-    /* ------------------------------------------------------------------ */
-    /* Benchmarks de speedup (útil para o relatório do projeto)           */
-    /* ------------------------------------------------------------------ */
+    /* -------------------------------------------------------------------------
+     * REQUISITO D — Benchmarks (só em modo verbose)
+     * ------------------------------------------------------------------------- */
     if (cfg.verbose) {
         printf("\n[Benchmarks]\n");
         printf("  Linhas/segundo : %.0f\n",

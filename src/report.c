@@ -8,8 +8,15 @@
 #include "../include/ipc.h"
 
 /* ==========================================================================
- * Relatório no terminal
+ * REQUISITO A — Relatório final no terminal
+ *
+ * Apresenta o GlobalResult agregado num formato tabular com bordas Unicode.
+ * As secções de segurança, performance e top IPs são condicionais ao modo.
  * ========================================================================== */
+
+/* REQUISITO A: imprime o relatório final no terminal.
+ * Recebe o GlobalResult (dados agregados de todos os workers)
+ * e os resultados individuais para a tabela de workers. */
 void print_report(const GlobalResult *gr, const WorkerResult *workers,
                   int n_workers, const Config *cfg, double elapsed)
 {
@@ -21,14 +28,20 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
     printf("╔══════════════════════════════════════════════════╗\n");
     printf("║          LOG ANALYZER  —  Relatorio Final        ║\n");
     printf("╠══════════════════════════════════════════════════╣\n");
-    printf("║  Modo    : %-10s   Workers : %-3d                ║\n",mode_to_string(cfg->mode), cfg->num_procs);
+    printf("║  Modo    : %-10s   Workers : %-3d                ║\n",
+           mode_to_string(cfg->mode), cfg->num_procs);
     printf("╠══════════════════════════════════════════════════╣\n");
+
+    /* REQUISITO A: secção de métricas de processamento */
     printf("║  PROCESSAMENTO                                   ║\n");
     printf("║  Linhas totais  : %-10ld                         ║\n", gr->total_lines);
-    printf("║  Linhas parsed  : %-10ld  (%.1f%%)               ║\n",gr->total_parsed, parse_rate);
+    printf("║  Linhas parsed  : %-10ld  (%.1f%%)               ║\n",
+           gr->total_parsed, parse_rate);
     printf("║  Throughput     : %-10.0f linhas/s               ║\n", throughput);
     printf("║  Tempo total    : %-10.3f s                      ║\n", elapsed);
     printf("╠══════════════════════════════════════════════════╣\n");
+
+    /* REQUISITO A: secção de severidade (sempre presente) */
     printf("║  SEVERIDADE                                      ║\n");
     printf("║  INFO/LOW  : %-10ld                              ║\n", gr->total_info);
     printf("║  WARN      : %-10ld                              ║\n", gr->total_warn);
@@ -36,12 +49,15 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
     printf("║  CRITICAL  : %-10ld                              ║\n", gr->total_critical);
     printf("╠══════════════════════════════════════════════════╣\n");
 
+    /* REQUISITO A: secção de segurança — só para modos security e full */
     if (cfg->mode == MODE_SECURITY || cfg->mode == MODE_FULL) {
         printf("║  SEGURANCA                                       ║\n");
         printf("║  Eventos       : %-10ld                          ║\n", gr->total_security);
         printf("║  Erros 4xx     : %-10ld                          ║\n", gr->total_4xx);
         printf("╠══════════════════════════════════════════════════╣\n");
     }
+
+    /* REQUISITO A: secção de performance — só para modos performance e full */
     if (cfg->mode == MODE_PERFORMANCE || cfg->mode == MODE_FULL) {
         printf("║  PERFORMANCE                                     ║\n");
         printf("║  Eventos       : %-10ld                          ║\n", gr->total_perf);
@@ -49,14 +65,17 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
         printf("╠══════════════════════════════════════════════════╣\n");
     }
 
+    /* REQUISITO A: secção de top IPs — só para modos traffic e full */
     if (cfg->mode == MODE_TRAFFIC || cfg->mode == MODE_FULL) {
         printf("║  TOP IPs                                         ║\n");
         for (int i = 0; i < TOP_IPS && gr->top_ips[i][0]; i++) {
-            printf("║  %2d. %-22s %10ld req                        ║\n",i + 1, gr->top_ips[i], gr->top_ip_counts[i]);
+            printf("║  %2d. %-22s %10ld req                        ║\n",
+                   i + 1, gr->top_ips[i], gr->top_ip_counts[i]);
         }
         printf("╠══════════════════════════════════════════════════╣\n");
     }
 
+    /* REQUISITO B: resultados individuais por worker */
     printf("║  RESULTADOS POR WORKER                           ║\n");
     for (int i = 0; i < n_workers; i++) {
         printf("║  W%-2d PID:%-6d  Linhas:%-7ld  SEC:%-5ld      ║\n",
@@ -69,11 +88,20 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
 }
 
 /* ==========================================================================
- * Relatório em JSON  (--output=<ficheiro>)
+ * REQUISITO A — Relatório em JSON  (--output=<ficheiro>)
+ *
+ * Escreve o GlobalResult num ficheiro JSON usando apenas syscalls POSIX
+ * (open/write/close via writen). Activado pela opção --output=.
+ * Syscalls: open, write (via writen), close
  * ========================================================================== */
+
+/* REQUISITO A: escreve o relatório final em formato JSON para o ficheiro
+ * especificado em --output=<ficheiro>. Usa writen() para garantir
+ * escrita completa sem fwrite. */
 void write_report_json(const GlobalResult *gr, const Config *cfg,
                        double elapsed, const char *path)
 {
+    /* REQUISITO A: abrir/criar o ficheiro de output com syscall open */
     int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) { perror("open (output)"); return; }
 
@@ -101,8 +129,10 @@ void write_report_json(const GlobalResult *gr, const Config *cfg,
         gr->total_4xx, gr->total_5xx,
         gr->total_security, gr->total_perf);
 
+    /* REQUISITO A: escrever header JSON via writen (sem fwrite) */
     if (len > 0) writen(fd, buf, (size_t)len);
 
+    /* REQUISITO A: escrever array de top IPs */
     for (int i = 0; i < TOP_IPS && gr->top_ips[i][0]; i++) {
         len = snprintf(buf, sizeof(buf),
                        "    { \"ip\": \"%s\", \"count\": %ld }%s\n",
@@ -113,6 +143,7 @@ void write_report_json(const GlobalResult *gr, const Config *cfg,
 
     len = snprintf(buf, sizeof(buf), "  ]\n}\n");
     if (len > 0) writen(fd, buf, (size_t)len);
+
     close(fd);
     printf("Relatorio JSON guardado: %s\n", path);
 }

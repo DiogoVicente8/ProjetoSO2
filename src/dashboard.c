@@ -5,10 +5,18 @@
 #include "../include/dashboard.h"
 #include "../include/ipc.h"
 
+/* ==========================================================================
+ * REQUISITO D — Dashboard de progresso em tempo real (ANSI)
+ *
+ * Usa escape codes ANSI para redesenhar o dashboard no lugar sem limpar
+ * o ecrã inteiro. Escreve directamente com write() (via writen) para
+ * evitar buffering do stdio que atrasaria as actualizações visuais.
+ * ========================================================================== */
+
 /* Quantas linhas ocupa o dashboard (calculado em dashboard_init) */
 static int g_dash_lines = 0;
 
-/* Cores ANSI */
+/* REQUISITO D: códigos de escape ANSI para cores */
 #define C_RESET  "\033[0m"
 #define C_BOLD   "\033[1m"
 #define C_CYAN   "\033[36m"
@@ -17,10 +25,12 @@ static int g_dash_lines = 0;
 #define C_RED    "\033[31m"
 #define C_WHITE  "\033[37m"
 
-/* Escreve sem buffering (usa write diretamente) */
+/* REQUISITO D: escreve no stdout sem buffering (syscall write directa) */
 static void out(const char *s) { writen(STDOUT_FILENO, s, strlen(s)); }
 
-/* Barra de progresso em UTF-8 (█ = bloco cheio, ░ = bloco vazio) */
+/* REQUISITO D: gera a barra de progresso em UTF-8.
+ * █ (U+2588) = bloco cheio  →  progresso feito
+ * ░ (U+2591) = bloco vazio  →  progresso restante */
 static void make_bar(char *buf, size_t bufsz, float pct, int width)
 {
     if (pct < 0)   pct = 0;
@@ -39,34 +49,30 @@ static void make_bar(char *buf, size_t bufsz, float pct, int width)
     buf[pos] = '\0';
 }
 
-/* ==========================================================================
- * Requisito 3.4 D — Dashboard de progresso em tempo real
- *
- * Reserva linhas no terminal para permitir redesenho com ANSI escape codes.
- * ========================================================================== */
+/* REQUISITO D: reserva linhas no terminal para o dashboard.
+ * Deve ser chamado uma vez antes do primeiro dashboard_draw().
+ * Fórmula: cabeçalho(3) + 1 linha/worker + separador(1) + rodapé(3) + fecho(1) */
 void dashboard_init(int n_workers)
 {
-    /*  Cabeçalho(3) + 1 linha/worker + separador(1) + rodapé(3) + fecho(1) = n+8 */
     g_dash_lines = n_workers + 8;
+    /* Reservar espaço no terminal com linhas em branco */
     for (int i = 0; i < g_dash_lines; i++) out("\n");
 }
 
-/* ==========================================================================
- * Requisito 3.4 D — Atualização visual periódica
- *
- * Mostra progresso por worker, progresso total, erros, tempo decorrido e ETA.
- * ========================================================================== */
+/* REQUISITO D: redesenha o dashboard no lugar usando escape ANSI \033[nA.
+ * Chamado periodicamente (a cada ~1 segundo) pelo pai durante a recolha.
+ * Mostra: barra por worker, barra total, eventos/sec, erros e ETA. */
 void dashboard_draw(WorkerStatus *st, int n, double elapsed,
                     long events_sec, long total_errors)
 {
     char line[256];
     char bar[128];
 
-    /* Subir o cursor para o topo do dashboard */
+    /* REQUISITO D: subir o cursor para o topo do dashboard com ANSI */
     snprintf(line, sizeof(line), "\033[%dA\r", g_dash_lines);
     out(line);
 
-    /* Calcular progresso total */
+    /* REQUISITO D: calcular progresso global (soma de todos os workers) */
     long total_proc = 0, total_lines = 0;
     for (int i = 0; i < n; i++) {
         total_proc  += st[i].lines_processed;
@@ -75,12 +81,12 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
     float total_pct = total_lines > 0
         ? (float)total_proc / total_lines * 100.0f : 0.0f;
 
-    /* ETA */
+    /* REQUISITO D: calcular ETA com base no progresso actual */
     double eta = 0;
     if (total_pct > 0.5f && total_pct < 99.5f)
         eta = elapsed / (total_pct / 100.0) - elapsed;
 
-    /* Cabeçalho */
+    /* REQUISITO D: cabeçalho do dashboard */
     out(C_CYAN C_BOLD
         "╔══════════════════════════════════════════╗\n"
         "║" C_RESET C_WHITE C_BOLD
@@ -89,10 +95,11 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         "╠══════════════════════════════════════════╣\n"
         C_RESET);
 
-    /* Linha por worker */
+    /* REQUISITO D: uma linha por worker com barra de progresso e cor por estado */
     for (int i = 0; i < n; i++) {
         float pct = st[i].progress_pct;
         make_bar(bar, sizeof(bar), pct, 18);
+        /* Cor: verde = DONE, amarelo = WORKING, branco = IDLE */
         const char *col = (st[i].state == STATE_DONE)    ? C_GREEN  :
                           (st[i].state == STATE_WORKING)  ? C_YELLOW : C_WHITE;
         snprintf(line, sizeof(line),
@@ -104,7 +111,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         out(line);
     }
 
-    /* Separador + total */
+    /* REQUISITO D: separador e barra de progresso total */
     out(C_CYAN C_BOLD "╠══════════════════════════════════════════╣\n" C_RESET);
 
     make_bar(bar, sizeof(bar), total_pct, 18);
@@ -115,7 +122,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         bar, total_pct);
     out(line);
 
-    /* Eventos/sec e erros */
+    /* REQUISITO D: linha de eventos/segundo e total de erros */
     snprintf(line, sizeof(line),
         C_CYAN C_BOLD "║ " C_RESET
         "Events/sec: " C_YELLOW "%-8ld" C_RESET
@@ -124,7 +131,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         events_sec, total_errors);
     out(line);
 
-    /* Tempo decorrido e ETA */
+    /* REQUISITO D: linha de tempo decorrido e ETA */
     int eh = (int)elapsed / 3600, em = ((int)elapsed % 3600) / 60, es = (int)elapsed % 60;
     int rh = (int)eta    / 3600, rm = ((int)eta    % 3600) / 60, rs = (int)eta    % 60;
     snprintf(line, sizeof(line),
@@ -135,10 +142,11 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         eh, em, es, rh, rm, rs);
     out(line);
 
+    /* REQUISITO D: rodapé do dashboard */
     out(C_CYAN C_BOLD "╚══════════════════════════════════════════╝\n" C_RESET);
 }
 
-
+/* REQUISITO D: imprime uma linha em branco após o dashboard final */
 void dashboard_done(int n_workers)
 {
     (void)n_workers;
