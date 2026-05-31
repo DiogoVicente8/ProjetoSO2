@@ -48,6 +48,12 @@ static double now_secs(void)
     return (double)tv.tv_sec + (double)tv.tv_usec / 1e6;
 }
 
+static double elapsed_since(double t0)
+{
+    double elapsed = now_secs() - t0;
+    return elapsed > 0.000001 ? elapsed : 0.000001;
+}
+
 /* -------------------------------------------------------------------------
  * Parse de --consumers=N da linha de comandos
  * ------------------------------------------------------------------------- */
@@ -216,7 +222,7 @@ int main(int argc, char *argv[])
             perror("pthread_join (consumer)");
     }
 
-    double elapsed = now_secs() - t0;
+    double elapsed = elapsed_since(t0);
 
     /* ------------------------------------------------------------------
      * Parar thread de dashboard
@@ -229,10 +235,14 @@ int main(int argc, char *argv[])
         if (pthread_join(dash_tid, NULL) != 0) perror("pthread_join (dashboard)");
 
         long errs = 0;
+        long lines = 0;
         for (int i = 0; i < C; i++)
             errs += cons_args[i].result.count_error
                   + cons_args[i].result.count_critical;
-        dashboard_draw(statuses, P, elapsed, 0, errs);
+        for (int i = 0; i < P; i++)
+            lines += statuses[i].lines_processed;
+        long eps = (long)((double)lines / elapsed);
+        dashboard_draw(statuses, P, elapsed, eps, errs);
         dashboard_done(P);
         dashboard_arg_destroy(&dash_arg);
     }

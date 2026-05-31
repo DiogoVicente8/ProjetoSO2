@@ -78,7 +78,9 @@ void *dashboard_thread_run(void *arg)
                             : 0;  /* workers em curso: erros lidos via result */
         }
  
-        long eps = elapsed > 0 ? (long)(total_lines / elapsed) : 0;
+        if (elapsed <= 0.000001)
+            elapsed = 0.000001;
+        long eps = (long)((double)total_lines / elapsed);
  
         dashboard_draw(da->statuses, da->n_workers,
                        elapsed, eps, total_errors);

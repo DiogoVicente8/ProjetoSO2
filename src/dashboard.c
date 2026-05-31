@@ -132,8 +132,10 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
     out(line);
 
     /* REQUISITO D: linha de tempo decorrido e ETA */
-    int eh = (int)elapsed / 3600, em = ((int)elapsed % 3600) / 60, es = (int)elapsed % 60;
-    int rh = (int)eta    / 3600, rm = ((int)eta    % 3600) / 60, rs = (int)eta    % 60;
+    int elapsed_s = (elapsed > 0.0 && elapsed < 1.0) ? 1 : (int)elapsed;
+    int eta_s     = (eta     > 0.0 && eta     < 1.0) ? 1 : (int)eta;
+    int eh = elapsed_s / 3600, em = (elapsed_s % 3600) / 60, es = elapsed_s % 60;
+    int rh = eta_s     / 3600, rm = (eta_s     % 3600) / 60, rs = eta_s     % 60;
     snprintf(line, sizeof(line),
         C_CYAN C_BOLD "║ " C_RESET
         "Elapsed: " C_GREEN "%02d:%02d:%02d" C_RESET

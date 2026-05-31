@@ -12,6 +12,8 @@
 #include "../include/event_classifier.h"
 #include "../include/ipc.h"
 #include "../include/files.h"
+
+#define DEFAULT_DEMO_DELAY_US 50000
  
 /* =========================================================================
  * Tabela de IPs local à thread (sem partilha — cada thread tem a sua)
@@ -20,6 +22,13 @@ typedef struct {
     ThreadIPEntry e[THREAD_IP_TABLE];
     int           used;
 } LocalIPTable;
+
+static useconds_t demo_delay_us(void)
+{
+    const char *env = getenv("LOG_ANALYZER_SLOW_US");
+    long delay = env ? atol(env) : DEFAULT_DEMO_DELAY_US;
+    return delay > 0 ? (useconds_t)delay : 0;
+}
  
 static void ip_add(LocalIPTable *t, const char *ip)
 {
@@ -217,6 +226,9 @@ static void process_file(const char *path, WorkerResult *res,
                                     (float)res->lines_total / status->total_lines * 100.0f;
                             pthread_mutex_unlock(status_mutex);
                         }
+                        useconds_t delay = demo_delay_us();
+                        if (delay > 0)
+                            usleep(delay);
                     }
                 }
             } else if (lpos < MAX_LINE_LENGTH - 1) {

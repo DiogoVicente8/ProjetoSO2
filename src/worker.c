@@ -21,6 +21,7 @@
  * No final, o top10 é serializado e enviado ao pai via pipe/socket.
  * ========================================================================== */
 #define IP_TABLE 512
+#define DEFAULT_DEMO_DELAY_US 50000
 
 typedef struct { char ip[MAX_IP_LEN]; long count; } IPEntry;
 typedef struct { IPEntry e[IP_TABLE]; int used; } IPTable;
@@ -98,6 +99,13 @@ static void send_progress(int fd, long lines)
                        "PROGRESS;PID:%d;LINES:%ld\n", (int)getpid(), lines);
     if (len > 0 && len < (int)sizeof(msg))
         writen(fd, msg, (size_t)len);
+}
+
+static useconds_t demo_delay_us(void)
+{
+    const char *env = getenv("LOG_ANALYZER_SLOW_US");
+    long delay = env ? atol(env) : DEFAULT_DEMO_DELAY_US;
+    return delay > 0 ? (useconds_t)delay : 0;
 }
 
 /* ==========================================================================
@@ -216,8 +224,12 @@ static void process_one_file(const char *path, const Config *cfg,
             res->lines_total++;
 
             /* REQUISITO D: enviar progresso ao pai a cada 500 linhas */
-            if (!cfg->verbose && comm_fd >= 0 && (res->lines_total % 500 == 0))
+            if (!cfg->verbose && comm_fd >= 0 && (res->lines_total % 500 == 0)) {
                 send_progress(comm_fd, res->lines_total);
+                useconds_t delay = demo_delay_us();
+                if (delay > 0)
+                    usleep(delay);
+            }
 
             /* REQUISITO B: detectar formato e parsear a linha */
             LogFmt fmt = detect_format(line);

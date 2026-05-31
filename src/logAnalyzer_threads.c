@@ -40,6 +40,12 @@ static double now_secs(void)
     gettimeofday(&tv, NULL);
     return (double)tv.tv_sec + (double)tv.tv_usec / 1e6;
 }
+
+static double elapsed_since(double t0)
+{
+    double elapsed = now_secs() - t0;
+    return elapsed > 0.000001 ? elapsed : 0.000001;
+}
  
 /* =========================================================================
  * MAIN
@@ -161,7 +167,7 @@ int main(int argc, char *argv[])
         results[i] = args[i].result;
     }
  
-    double elapsed = now_secs() - t0;
+    double elapsed = elapsed_since(t0);
  
     /* ------------------------------------------------------------------
      * Req 2-B: Sinalizar a thread de dashboard para parar e fazer join
@@ -177,9 +183,13 @@ int main(int argc, char *argv[])
  
         /* Desenhar estado final (100% em todos) */
         long errs = 0;
+        long lines = 0;
         for (int i = 0; i < N; i++)
             errs += results[i].count_error + results[i].count_critical;
-        dashboard_draw(statuses, N, elapsed, 0, errs);
+        for (int i = 0; i < N; i++)
+            lines += statuses[i].lines_processed;
+        long eps = (long)((double)lines / elapsed);
+        dashboard_draw(statuses, N, elapsed, eps, errs);
         dashboard_done(N);
  
         dashboard_arg_destroy(&dash_arg);

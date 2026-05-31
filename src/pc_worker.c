@@ -13,6 +13,15 @@
 #include "../include/event_classifier.h"
 #include "../include/worker.h"   /* LogFmt, FMT_* */
 
+#define DEFAULT_DEMO_DELAY_US 50000
+
+static useconds_t demo_delay_us(void)
+{
+    const char *env = getenv("LOG_ANALYZER_SLOW_US");
+    long delay = env ? atol(env) : DEFAULT_DEMO_DELAY_US;
+    return delay > 0 ? (useconds_t)delay : 0;
+}
+
 /* =========================================================================
  * Deteção de formato
  * ========================================================================= */
@@ -88,6 +97,9 @@ void *producer_run(void *arg)
                                         pa->status->total_lines * 100.0f;
                                 pthread_mutex_unlock(pa->status_mutex);
                             }
+                            useconds_t delay = demo_delay_us();
+                            if (delay > 0)
+                                usleep(delay);
                         }
                     }
                 } else if (lpos < MAX_LINE_LENGTH - 1) {
