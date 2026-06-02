@@ -83,12 +83,6 @@ static double now_secs(void)
     return (double)tv.tv_sec + (double)tv.tv_usec / 1e6;
 }
 
-static double elapsed_since(double t0)
-{
-    double elapsed = now_secs() - t0;
-    return elapsed > 0.000001 ? elapsed : 0.000001;
-}
-
 /* ==========================================================================
  * REQUISITO D — Atualiza a barra de progresso com mensagens PROGRESS
  * Protocolo: PROGRESS;PID:<pid>;LINES:<n>
@@ -181,6 +175,7 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
     int    lpos     = 0;
     int    received = 0;
     double t_last   = t0;
+    long   ev_total = 0;
 
     while (received < max) {
         ssize_t n = read(fd, buf, sizeof(buf) - 1);
@@ -213,6 +208,7 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
 
                 /* --- REQUISITO D: evento verbose --- */
                 } else if (verbose && strncmp(line, "VERBOSE;", 8) == 0) {
+                    ev_total++;
                     print_verbose_event(line);
                 }
 
@@ -220,18 +216,12 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
                 double t_now = now_secs();
                 if (t_now - t_last >= 1.0) {
                     long errs = 0;
-                    long lines = 0;
-                    double elapsed = t_now - t0;
                     for (int j = 0; j < received; j++)
                         errs += results[j].count_error + results[j].count_critical;
-                    for (int j = 0; j < n_workers; j++)
-                        lines += statuses[j].lines_processed;
-                    if (elapsed <= 0.000001)
-                        elapsed = 0.000001;
-                    long eps = (long)((double)lines / elapsed);
+                    long eps = (t_now - t0 > 0) ? (long)(ev_total / (t_now - t0)) : 0;
                     if (!verbose)
                         dashboard_draw(statuses, n_workers,
-                                       elapsed, eps, errs);
+                                       t_now - t0, eps, errs);
                     t_last = t_now;
                 }
             } else if (lpos < (int)sizeof(line) - 1) {
@@ -453,20 +443,16 @@ int main(int argc, char *argv[])
         statuses[i].progress_pct = 100.0f;
     }
 
-    double elapsed = elapsed_since(t0);
+    double elapsed = now_secs() - t0;
 
     /* -------------------------------------------------------------------------
      * REQUISITO D — Dashboard final e relatório
      * ------------------------------------------------------------------------- */
     if (!cfg.verbose) {
         long errs = 0;
-        long lines = 0;
         for (int i = 0; i < received; i++)
             errs += results[i].count_error + results[i].count_critical;
-        for (int i = 0; i < cfg.num_procs; i++)
-            lines += statuses[i].lines_processed;
-        long eps = (long)((double)lines / elapsed);
-        dashboard_draw(statuses, cfg.num_procs, elapsed, eps, errs);
+        dashboard_draw(statuses, cfg.num_procs, elapsed, 0, errs);
         dashboard_done(cfg.num_procs);
     }
 
