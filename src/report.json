@@ -1,0 +1,25 @@
+{
+  "mode": "performance",
+  "workers": 2,
+  "elapsed_s": 0.076,
+  "throughput_lines_s": 283686,
+  "lines": { "total": 21500, "parsed": 21500 },
+  "severity": {
+    "info": 0, "warn": 3258,
+    "error": 11047, "critical": 0
+  },
+  "http": { "4xx": 0, "5xx": 0 },
+  "events": { "security": 0, "performance": 14305 },
+  "top_ips": [
+    { "ip": "192.168.91.196", "count": 4 },
+    { "ip": "192.168.253.136", "count": 3 },
+    { "ip": "192.168.213.52", "count": 3 },
+    { "ip": "192.168.109.132", "count": 3 },
+    { "ip": "192.168.145.156", "count": 3 },
+    { "ip": "192.168.115.211", "count": 3 },
+    { "ip": "192.168.65.5", "count": 3 },
+    { "ip": "192.168.25.138", "count": 3 },
+    { "ip": "192.168.101.190", "count": 3 },
+    { "ip": "192.168.245.210", "count": 3 }
+  ]
+}

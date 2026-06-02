@@ -91,7 +91,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         "╔══════════════════════════════════════════╗\n"
         "║" C_RESET C_WHITE C_BOLD
         "     LOG ANALYZER - Real-time Monitor     "
-           C_CYAN C_BOLD "                          ║\n"
+           C_CYAN C_BOLD "║\n"
         "╠══════════════════════════════════════════╣\n"
         C_RESET);
 
@@ -106,7 +106,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
             C_CYAN C_BOLD "║ " C_RESET
             C_WHITE "Worker %-2d " C_RESET
             "%s[%s]" C_RESET " %s%3.0f%%" C_RESET
-            " " C_CYAN C_BOLD "║\n" C_RESET,
+            "      " C_CYAN C_BOLD "║\n" C_RESET,
             i + 1, col, bar, col, pct);
         out(line);
     }
@@ -118,7 +118,7 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
     snprintf(line, sizeof(line),
         C_CYAN C_BOLD "║ " C_RESET C_BOLD "Total     " C_RESET
         C_GREEN "[%s]" C_RESET C_BOLD " %3.0f%%" C_RESET
-        " " C_CYAN C_BOLD "║\n" C_RESET,
+        "      " C_CYAN C_BOLD "║\n" C_RESET,
         bar, total_pct);
     out(line);
 
@@ -127,21 +127,27 @@ void dashboard_draw(WorkerStatus *st, int n, double elapsed,
         C_CYAN C_BOLD "║ " C_RESET
         "Events/sec: " C_YELLOW "%-8ld" C_RESET
         " Errors: " C_RED "%-5ld" C_RESET
-        C_CYAN C_BOLD "║\n" C_RESET,
+        "      " C_CYAN C_BOLD "║\n" C_RESET,
         events_sec, total_errors);
     out(line);
 
     /* REQUISITO D: linha de tempo decorrido e ETA */
-    int elapsed_s = (elapsed > 0.0 && elapsed < 1.0) ? 1 : (int)elapsed;
-    int eta_s     = (eta     > 0.0 && eta     < 1.0) ? 1 : (int)eta;
-    int eh = elapsed_s / 3600, em = (elapsed_s % 3600) / 60, es = elapsed_s % 60;
-    int rh = eta_s     / 3600, rm = (eta_s     % 3600) / 60, rs = eta_s     % 60;
+    long elapsed_ms = elapsed > 0.0 ? (long)(elapsed * 1000.0) : 0;
+    long eta_ms     = eta     > 0.0 ? (long)(eta     * 1000.0) : 0;
+    int eh = (int)(elapsed_ms / 3600000);
+    int em = (int)((elapsed_ms % 3600000) / 60000);
+    int es = (int)((elapsed_ms % 60000) / 1000);
+    int e_ms = (int)(elapsed_ms % 1000);
+    int rh = (int)(eta_ms / 3600000);
+    int rm = (int)((eta_ms % 3600000) / 60000);
+    int rs = (int)((eta_ms % 60000) / 1000);
+    int r_ms = (int)(eta_ms % 1000);
     snprintf(line, sizeof(line),
         C_CYAN C_BOLD "║ " C_RESET
-        "Elapsed: " C_GREEN "%02d:%02d:%02d" C_RESET
-        "  ETA: " C_YELLOW "%02d:%02d:%02d" C_RESET
-        "   " C_CYAN C_BOLD "║\n" C_RESET,
-        eh, em, es, rh, rm, rs);
+        "Elapsed: " C_GREEN "%02d:%02d:%02d.%03d" C_RESET
+        " ETA: " C_YELLOW "%02d:%02d:%02d.%03d" C_RESET
+        "  " C_CYAN C_BOLD "║\n" C_RESET,
+        eh, em, es, e_ms, rh, rm, rs, r_ms);
     out(line);
 
     /* REQUISITO D: rodapé do dashboard */

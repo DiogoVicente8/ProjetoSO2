@@ -11,7 +11,8 @@ Sistema paralelo de analise de logs com implementacoes por processos, Unix Domai
 
 ```text
 src/
-├── logAnalyzer.c          # Fase 1: processos + pipes
+├── logAnalyzer.c          # Fase 1: main/orquestrador dos requisitos
+├── phase1_process.{h,c}   # Fase 1: fork, pipes, sockets, waitpid e dashboard
 ├── logAnalyzer_threads.c  # Fase 2A/B: worker threads + dashboard dedicado
 ├── logAnalyzer_pc.c       # Fase 2C: produtor-consumidor
 ├── config.{h,c}           # Parse da linha de comandos

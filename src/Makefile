@@ -10,7 +10,7 @@ SHARED_SRCS = config.c files.c ipc.c dashboard.c report.c \
 SHARED_OBJS = $(SHARED_SRCS:.c=.o)
  
 # Fase 1 — processos
-F1_SRCS     = logAnalyzer.c worker.c
+F1_SRCS     = logAnalyzer.c phase1_process.c worker.c
 F1_OBJS     = $(F1_SRCS:.c=.o)
 TARGET      = logAnalyzer
 TARGET_SOCK = logAnalyzer_sockets
