@@ -1,6 +1,10 @@
 // log_parser.c — Parsers de formatos de log (sem regex, portável)
-#include "log_parser.h"
-#include <ctype.h>
+#include "log_parser.h"      // Declarações de estruturas e protótipos de parsing.
+#include <ctype.h>           // isdigit, isspace, isalpha.
+#include <string.h>          // memset, strncpy, strlen, strcmp, strstr, strchr.
+#include <stdio.h>           // sscanf.
+#include <stdlib.h>          // atoi, atol.
+#include <time.h>            // struct tm, time, localtime.
 
 /* ==========================================================================
  * REQUISITO B — Formatos de logs suportados
@@ -15,7 +19,6 @@
  * Usam apenas parsing manual com ponteiros — sem regex, sem strtok.
  * ========================================================================== */
 
-
 /* ==========================================================================
  * REQUISITO B — Parser: Apache Combined Log Format
  *
@@ -29,30 +32,31 @@
  * tamanho da resposta, referer e user-agent.
  * Retorna 0 em sucesso, -1 se a linha não corresponder ao formato. */
 int parse_apache_log(const char* line, ApacheLogEntry* entry) {
-    if (!line || !entry) return -1;
+    if (!line || !entry) return -1;      // Validação de ponteiros.
 
     memset(entry, 0, sizeof(ApacheLogEntry));
+    // Zera a estrutura antes de preencher campos.
 
-    const char* ptr = line;
+    const char* ptr = line;              // Ponteiro iterador sobre a linha.
 
     /* REQUISITO B: 1. Extrair IP (até o primeiro espaço) */
     int i = 0;
     while (*ptr && *ptr != ' ' && i < MAX_IP_LENGTH - 1) {
         entry->ip[i++] = *ptr++;
     }
-    entry->ip[i] = '\0';
+    entry->ip[i] = '\0';                // Termina a string do IP.
 
-    if (*ptr != ' ') return -1;
+    if (*ptr != ' ') return -1;          // O IP deve ser seguido de espaço.
 
     /* REQUISITO B: 2. Saltar " - - " (ident e authuser) */
+    while (*ptr == ' ') ptr++;           // Avança espaços.
+    if (*ptr == '-') ptr++;              // Pula ident.
     while (*ptr == ' ') ptr++;
-    if (*ptr == '-') ptr++;
-    while (*ptr == ' ') ptr++;
-    if (*ptr == '-') ptr++;
+    if (*ptr == '-') ptr++;              // Pula authuser.
     while (*ptr == ' ') ptr++;
 
     /* REQUISITO B: 3. Extrair timestamp [13/Feb/2024:10:23:45 +0000] */
-    if (*ptr != '[') return -1;
+    if (*ptr != '[') return -1;          // Timestamp começa com '['.
     ptr++;
 
     char timestamp_str[64];
@@ -60,17 +64,18 @@ int parse_apache_log(const char* line, ApacheLogEntry* entry) {
     while (*ptr && *ptr != ']' && i < 63) {
         timestamp_str[i++] = *ptr++;
     }
-    timestamp_str[i] = '\0';
+    timestamp_str[i] = '\0';            // Fecha string do timestamp.
 
-    if (*ptr != ']') return -1;
+    if (*ptr != ']') return -1;          // Timestamp deve terminar com ']'.
     ptr++;
 
     parse_apache_timestamp(timestamp_str, &entry->timestamp);
+    // Converte o timestamp Apache para struct tm.
 
     while (*ptr == ' ') ptr++;
 
     /* REQUISITO B: 4. Extrair request line "METHOD /url HTTP/1.1" */
-    if (*ptr != '"') return -1;
+    if (*ptr != '"') return -1;         // Request começa com aspas.
     ptr++;
 
     /* Método (GET, POST, PUT, etc.) */
@@ -136,7 +141,7 @@ int parse_apache_log(const char* line, ApacheLogEntry* entry) {
         entry->user_agent[i] = '\0';
     }
 
-    return 0;
+    return 0;                            // Parse bem sucedido.
 }
 
 
@@ -154,18 +159,19 @@ static char* extract_json_value(const char* json, const char* key,
                                  char* value, size_t max_len) {
     char search_key[128];
     snprintf(search_key, sizeof(search_key), "\"%s\":", key);
+    // Constrói o padrão de busca para a chave JSON.
 
     const char* pos = strstr(json, search_key);
-    if (!pos) return NULL;
+    if (!pos) return NULL;               // Chave não encontrada.
 
     pos += strlen(search_key);
-    while (*pos && isspace(*pos)) pos++;
+    while (*pos && isspace(*pos)) pos++; // Pula espaços após o ':' .
 
     if (*pos == '"') {
         /* Valor string */
         pos++;
         const char* end = strchr(pos, '"');
-        if (!end) return NULL;
+        if (!end) return NULL;           // Fecha aspas não encontrada.
 
         size_t len = end - pos;
         if (len >= max_len) len = max_len - 1;
@@ -182,7 +188,7 @@ static char* extract_json_value(const char* json, const char* key,
         value[len] = '\0';
     }
 
-    return value;
+    return value;                        // Retorna ponteiro para valor preenchido.
 }
 
 /* REQUISITO B: parseia uma linha JSON e preenche JSONLogEntry.
@@ -190,9 +196,10 @@ static char* extract_json_value(const char* json, const char* key,
  * e dentro de metadata: ip e user_id.
  * Retorna 0 em sucesso, -1 se linha inválida. */
 int parse_json_log(const char* line, JSONLogEntry* entry) {
-    if (!line || !entry) return -1;
+    if (!line || !entry) return -1;      // Validação de ponteiros.
 
     memset(entry, 0, sizeof(JSONLogEntry));
+    // Zera a estrutura antes do preenchimento.
 
     char value[MAX_MSG_LENGTH];
 
@@ -234,7 +241,7 @@ int parse_json_log(const char* line, JSONLogEntry* entry) {
         }
     }
 
-    return 0;
+    return 0;                            // Parse JSON concluído.
 }
 
 
@@ -251,11 +258,12 @@ int parse_json_log(const char* line, JSONLogEntry* entry) {
  * falhas de autenticação, tentativas sudo e bloqueios de firewall.
  * Retorna 0 em sucesso, -1 se linha inválida. */
 int parse_syslog(const char* line, SyslogEntry* entry) {
-    if (!line || !entry) return -1;
+    if (!line || !entry) return -1;      // Validação de ponteiros.
 
     memset(entry, 0, sizeof(SyslogEntry));
+    // Zera a estrutura antes do preenchimento.
 
-    const char* ptr = line;
+    const char* ptr = line;              // Iterador para a linha.
 
     /* REQUISITO B: parsear prioridade <nnn> se presente */
     if (*ptr == '<') {
@@ -291,6 +299,7 @@ int parse_syslog(const char* line, SyslogEntry* entry) {
     timestamp_str[i] = '\0';
 
     parse_syslog_timestamp(timestamp_str, &entry->timestamp);
+    // Converte o timestamp Syslog para struct tm.
     while (*ptr && isspace(*ptr)) ptr++;
 
     /* REQUISITO B: parsear hostname */
@@ -319,6 +328,7 @@ int parse_syslog(const char* line, SyslogEntry* entry) {
 
     /* REQUISITO B: o resto da linha é a mensagem */
     strncpy(entry->message, ptr, sizeof(entry->message) - 1);
+    entry->message[sizeof(entry->message) - 1] = '\0';
 
     /* REQUISITO B: detecção de eventos de segurança no syslog */
     entry->is_auth_failure = (strstr(entry->message, "authentication failure") != NULL ||
@@ -327,8 +337,9 @@ int parse_syslog(const char* line, SyslogEntry* entry) {
     entry->is_sudo_attempt  = (strstr(entry->service, "sudo") != NULL);
     entry->is_firewall_block = (strstr(entry->message, "REJECT") != NULL ||
                                  strstr(entry->message, "DROP") != NULL);
+    // Define flags de eventos de segurança conforme palavras-chave encontradas.
 
-    return 0;
+    return 0;                            // Parse Syslog concluído.
 }
 
 
@@ -344,9 +355,10 @@ int parse_syslog(const char* line, SyslogEntry* entry) {
  * connection_id, client_ip e message.
  * Retorna 0 em sucesso, -1 se linha inválida. */
 int parse_nginx_error(const char* line, NginxErrorEntry* entry) {
-    if (!line || !entry) return -1;
+    if (!line || !entry) return -1;      // Validação de ponteiros.
 
     memset(entry, 0, sizeof(NginxErrorEntry));
+    // Zera a estrutura antes do preenchimento.
 
     /* REQUISITO B: parsear timestamp YYYY/MM/DD HH:MM:SS */
     struct tm tm = {0};
@@ -412,7 +424,7 @@ int parse_nginx_error(const char* line, NginxErrorEntry* entry) {
         }
     }
 
-    return 0;
+    return 0;                            // Parse Nginx Error Log concluído.
 }
 
 
@@ -427,7 +439,7 @@ int parse_apache_timestamp(const char* timestamp_str, struct tm* tm_out) {
 
     if (sscanf(timestamp_str, "%d/%3s/%d:%d:%d:%d",
                &day, month_str, &year, &hour, &min, &sec) != 6) {
-        return -1;
+        return -1;                        // Formato inválido.
     }
 
     const char* months[] = {"Jan","Feb","Mar","Apr","May","Jun",
@@ -436,7 +448,7 @@ int parse_apache_timestamp(const char* timestamp_str, struct tm* tm_out) {
     for (int i = 0; i < 12; i++) {
         if (strcmp(month_str, months[i]) == 0) { month = i; break; }
     }
-    if (month == -1) return -1;
+    if (month == -1) return -1;           // Mês inválido.
 
     tm_out->tm_mday = day;
     tm_out->tm_mon  = month;
@@ -445,7 +457,7 @@ int parse_apache_timestamp(const char* timestamp_str, struct tm* tm_out) {
     tm_out->tm_min  = min;
     tm_out->tm_sec  = sec;
 
-    return 0;
+    return 0;                            // Timestamp Apache convertido.
 }
 
 /* REQUISITO B: parseia timestamp ISO 8601 "YYYY-MM-DDTHH:MM:SS" para struct tm */
@@ -454,7 +466,7 @@ int parse_iso8601_timestamp(const char* timestamp_str, struct tm* tm_out) {
 
     if (sscanf(timestamp_str, "%d-%d-%dT%d:%d:%d",
                &year, &month, &day, &hour, &min, &sec) != 6) {
-        return -1;
+        return -1;                        // Formato inválido.
     }
 
     tm_out->tm_year = year - 1900;
@@ -464,7 +476,7 @@ int parse_iso8601_timestamp(const char* timestamp_str, struct tm* tm_out) {
     tm_out->tm_min  = min;
     tm_out->tm_sec  = sec;
 
-    return 0;
+    return 0;                            // Timestamp ISO convertido.
 }
 
 /* REQUISITO B: parseia timestamp Syslog "Mon DD HH:MM:SS" para struct tm.
@@ -475,7 +487,7 @@ int parse_syslog_timestamp(const char* timestamp_str, struct tm* tm_out) {
 
     if (sscanf(timestamp_str, "%3s %d %d:%d:%d",
                month_str, &day, &hour, &min, &sec) != 5) {
-        return -1;
+        return -1;                        // Formato inválido.
     }
 
     const char* months[] = {"Jan","Feb","Mar","Apr","May","Jun",
@@ -484,7 +496,7 @@ int parse_syslog_timestamp(const char* timestamp_str, struct tm* tm_out) {
     for (int i = 0; i < 12; i++) {
         if (strcmp(month_str, months[i]) == 0) { month = i; break; }
     }
-    if (month == -1) return -1;
+    if (month == -1) return -1;           // Mês inválido.
 
     /* Usar o ano actual (syslog não inclui o ano) */
     time_t now = time(NULL);
@@ -497,5 +509,5 @@ int parse_syslog_timestamp(const char* timestamp_str, struct tm* tm_out) {
     tm_out->tm_min  = min;
     tm_out->tm_sec  = sec;
 
-    return 0;
+    return 0;                            // Timestamp Syslog convertido.
 }

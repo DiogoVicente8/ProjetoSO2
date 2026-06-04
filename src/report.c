@@ -1,11 +1,11 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include "../include/report.h"
-#include "../include/ipc.h"
+#define _GNU_SOURCE                      /* Define GNU extensions para algumas funções extra. */
+#include <stdio.h>                        /* printf, perror, snprintf. */
+#include <stdlib.h>                       /* malloc, free, exit, etc. */
+#include <string.h>                       /* strcmp, strlen, strerror, etc. */
+#include <fcntl.h>                        /* open, O_WRONLY, O_CREAT, O_TRUNC. */
+#include <unistd.h>                       /* close, write, read. */
+#include "../include/report.h"           /* Definições de GlobalResult, WorkerResult e funções do relatório. */
+#include "../include/ipc.h"              /* Definições de writen() e tipos IPC. */
 
 /* ==========================================================================
  * REQUISITO A — Relatório final no terminal
@@ -21,15 +21,19 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
                   int n_workers, const Config *cfg, double elapsed)
 {
     double throughput = elapsed > 0 ? (double)gr->total_lines / elapsed : 0;
+    /* Calcula o throughput em linhas por segundo, evita divisão por zero. */
+
     double parse_rate = gr->total_lines > 0
         ? 100.0 * gr->total_parsed / gr->total_lines : 0;
+    /* Calcula a percentagem de linhas analisadas, evita divisão por zero. */
 
-    printf("\n");
+    printf("\n");                        /* Linha em branco antes do relatório. */
     printf("╔══════════════════════════════════════════════════╗\n");
     printf("║          LOG ANALYZER  —  Relatorio Final        ║\n");
     printf("╠══════════════════════════════════════════════════╣\n");
     printf("║  Modo    : %-10s   Workers : %-3d                ║\n",
            mode_to_string(cfg->mode), cfg->num_procs);
+    /* Mostra o modo de análise e o número de workers usados. */
     printf("╠══════════════════════════════════════════════════╣\n");
 
     /* REQUISITO A: secção de métricas de processamento */
@@ -71,6 +75,7 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
         for (int i = 0; i < TOP_IPS && gr->top_ips[i][0]; i++) {
             printf("║  %2d. %-22s %10ld req                        ║\n",
                    i + 1, gr->top_ips[i], gr->top_ip_counts[i]);
+            /* Para cada top IP válido, mostra a posição, o IP e o número de pedidos. */
         }
         printf("╠══════════════════════════════════════════════════╣\n");
     }
@@ -83,6 +88,7 @@ void print_report(const GlobalResult *gr, const WorkerResult *workers,
                (int)workers[i].pid,
                workers[i].lines_total,
                workers[i].security_events);
+        /* Mostra o worker, PID, total de linhas processadas e eventos de segurança. */
     }
     printf("╚══════════════════════════════════════════════════╝\n");
 }
@@ -104,8 +110,9 @@ void write_report_json(const GlobalResult *gr, const Config *cfg,
     /* REQUISITO A: abrir/criar o ficheiro de output com syscall open */
     int fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) { perror("open (output)"); return; }
+    /* Se a abertura falhar, mostra erro e sai sem tentar escrever. */
 
-    char buf[2048];
+    char buf[2048];                    /* Buffer para construir o JSON. */
     int len = snprintf(buf, sizeof(buf),
         "{\n"
         "  \"mode\": \"%s\",\n"
@@ -128,9 +135,10 @@ void write_report_json(const GlobalResult *gr, const Config *cfg,
         gr->total_error, gr->total_critical,
         gr->total_4xx, gr->total_5xx,
         gr->total_security, gr->total_perf);
+    /* Constroi o cabeçalho JSON com todas as métricas principais. */
 
-    /* REQUISITO A: escrever header JSON via writen (sem fwrite) */
     if (len > 0) writen(fd, buf, (size_t)len);
+    /* Escreve o buffer para o ficheiro usando writen para garantir escrita completa. */
 
     /* REQUISITO A: escrever array de top IPs */
     for (int i = 0; i < TOP_IPS && gr->top_ips[i][0]; i++) {
@@ -138,12 +146,15 @@ void write_report_json(const GlobalResult *gr, const Config *cfg,
                        "    { \"ip\": \"%s\", \"count\": %ld }%s\n",
                        gr->top_ips[i], gr->top_ip_counts[i],
                        (i + 1 < TOP_IPS && gr->top_ips[i + 1][0]) ? "," : "");
+        /* Adiciona vírgula entre objetos JSON quando não é o último IP. */
         if (len > 0) writen(fd, buf, (size_t)len);
     }
 
     len = snprintf(buf, sizeof(buf), "  ]\n}\n");
     if (len > 0) writen(fd, buf, (size_t)len);
+    /* Fecha o array top_ips e o objeto JSON. */
 
-    close(fd);
+    close(fd);                         /* Fecha o ficheiro de saída. */
     printf("Relatorio JSON guardado: %s\n", path);
+    /* Confirmação no terminal de que o ficheiro foi guardado. */
 }
