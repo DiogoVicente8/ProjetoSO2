@@ -4,8 +4,8 @@ Projeto de análise paralela de logs com implementações em processos, threads 
 
 ## Autores
 
-- Diogo Vicente — 2024115283
-- João Reis — 2024118534
+- Diogo Vicente — <2024115283@ufp.edu.pt>
+- João Reis — <2024118534@ufp.edu.pt>
 
 ## Estrutura do projeto
 

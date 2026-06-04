@@ -5,16 +5,23 @@
 #include <strings.h>
 #include <stdarg.h> 
 
-// Função auxiliar para copiar timestamp sem modificar const
+/* Helper interno: converte um struct tm (const) para time_t chamando mktime().
+ * mktime() exige um ponteiro não-const e pode modificar os campos do tm,
+ * por isso copia a estrutura para uma variável local antes de chamar. */
 static time_t safe_mktime(const struct tm* tm) {
     struct tm tmp = *tm;
     return mktime(&tmp);
 }
 
-// ============================================================================
-// CLASSIFICAÇÃO APACHE
-// ============================================================================
+/* ==========================================================================
+ * REQUISITO B — Classificação de eventos Apache Combined Log
+ * ========================================================================== */
 
+/* REQUISITO B: analisa um ApacheLogEntry já parseado e classifica o evento.
+ * Detecta: tentativas de acesso não autorizado (401/403), SQL Injection,
+ * XSS, path traversal, scanners (Nikto, sqlmap...), respostas grandes e
+ * erros de servidor 5xx. Preenche ClassifiedEvent com severity, tipos e
+ * descrição. Devolve um bitmask de EVENT_* com os tipos detectados. */
 int classify_apache_event(const ApacheLogEntry* entry, ClassifiedEvent* event) {
     if (!entry || !event) return 0;
     
@@ -143,10 +150,15 @@ int classify_apache_event(const ApacheLogEntry* entry, ClassifiedEvent* event) {
     return types;
 }
 
-// ============================================================================
-// CLASSIFICAÇÃO JSON
-// ============================================================================
+/* ==========================================================================
+ * REQUISITO B — Classificação de eventos JSON Log
+ * ========================================================================== */
 
+/* REQUISITO B: analisa um JSONLogEntry e classifica o evento com base
+ * no nível de log (DEBUG/INFO/WARN/ERROR/CRITICAL), no serviço (auth,
+ * security, database, api...) e nas palavras-chave da mensagem.
+ * Detecta: falhas de autenticação, timeouts, slow queries, rate limiting.
+ * Devolve um bitmask de EVENT_* com os tipos detectados. */
 int classify_json_event(const JSONLogEntry* entry, ClassifiedEvent* event) {
     if (!entry || !event) return 0;
     
@@ -231,10 +243,16 @@ int classify_json_event(const JSONLogEntry* entry, ClassifiedEvent* event) {
     return types;
 }
 
-// ============================================================================
-// CLASSIFICAÇÃO SYSLOG
-// ============================================================================
+/* ==========================================================================
+ * REQUISITO B — Classificação de eventos Syslog RFC 3164
+ * ========================================================================== */
 
+/* REQUISITO B: analisa um SyslogEntry e classifica o evento.
+ * Converte a prioridade Syslog (0=emerg a 7=debug) para a escala interna
+ * de severity (0-4). Usa as flags do parser (is_auth_failure, is_sudo_attempt,
+ * is_firewall_block) e palavras-chave (Failed password, kernel panic, segfault)
+ * para detectar eventos de segurança e erros críticos de sistema.
+ * Devolve um bitmask de EVENT_* com os tipos detectados. */
 int classify_syslog_event(const SyslogEntry* entry, ClassifiedEvent* event) {
     if (!entry || !event) return 0;
     
@@ -338,10 +356,16 @@ int classify_syslog_event(const SyslogEntry* entry, ClassifiedEvent* event) {
     return types;
 }
 
-// ============================================================================
-// CLASSIFICAÇÃO NGINX
-// ============================================================================
+/* ==========================================================================
+ * REQUISITO B — Classificação de eventos Nginx Error Log
+ * ========================================================================== */
 
+/* REQUISITO B: analisa um NginxErrorEntry e classifica o evento.
+ * Mapeia o nível Nginx (debug/info/notice/warn/error/crit/alert/emerg)
+ * para a escala interna de severity. Detecta: acessos negados, erros
+ * SSL/TLS, upstream timeouts, rate limiting e respostas demasiado grandes.
+ * Todos os eventos Nginx são sempre marcados como EVENT_TRAFFIC.
+ * Devolve um bitmask de EVENT_* com os tipos detectados. */
 int classify_nginx_event(const NginxErrorEntry* entry, ClassifiedEvent* event) {
     if (!entry || !event) return 0;
     
@@ -417,15 +441,23 @@ int classify_nginx_event(const NginxErrorEntry* entry, ClassifiedEvent* event) {
     return types;
 }
 
-// ============================================================================
-// FUNÇÕES AUXILIARES
-// ============================================================================
+/* ==========================================================================
+ * REQUISITO B — Funções auxiliares de consulta
+ * ========================================================================== */
 
+/* REQUISITO B: verifica se um evento classificado deve ser contabilizado
+ * no modo de análise configurado pelo utilizador (security, performance,
+ * traffic ou full). Em modo full todos os eventos passam; nos outros
+ * modos filtra pelo bitmask de event_types do ClassifiedEvent. */
 bool event_matches_mode(const ClassifiedEvent* event, AnalysisMode mode) {
     if (mode == MODE_FULL) return true;
     return (event->event_types & mode) != 0;
 }
 
+/* REQUISITO B: converte um bitmask de tipos de evento (EVENT_SECURITY,
+ * EVENT_PERFORMANCE, EVENT_TRAFFIC, EVENT_ERROR, EVENT_NORMAL) numa
+ * string legível com os nomes separados por espaço. Usado pelo worker
+ * ao formatar mensagens VERBOSE enviadas ao pai pelo pipe/socket. */
 const char* get_event_type_name(int event_type) {
     static char buffer[128];
     buffer[0] = '\0';
@@ -445,6 +477,9 @@ const char* get_event_type_name(int event_type) {
     return buffer;
 }
 
+/* REQUISITO B: converte o valor numérico de severity (0-4) para a string
+ * correspondente (INFO, LOW, MEDIUM, HIGH, CRITICAL). Usado nas mensagens
+ * VERBOSE e no relatório final para tornar os níveis legíveis. */
 const char* get_severity_name(int severity) {
     switch (severity) {
         case 0: return "INFO";
