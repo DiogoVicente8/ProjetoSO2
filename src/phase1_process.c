@@ -210,65 +210,51 @@ static int collect_from_fd(int fd, WorkerResult *results, int max,
                            WorkerStatus *statuses, int n_workers,
                            double t0, bool verbose)
 {
-    char buf[8192];               /* Buffer para os bytes lidos do pipe/socket. */
     char line[1024];              /* Buffer para acumular os bytes de uma linha. */
     int lpos = 0;                 /* Posição actual de escrita em line[]. */
     int received = 0;             /* Número de resultados RESULT; recebidos até agora. */
     double t_last = t0;           /* Tempo da última actualização do dashboard. */
 
-    while (received < max) {                                  /* Repete até receber todos os resultados. */
-        ssize_t n = read(fd, buf, sizeof(buf) - 1);           /* Lê dados do pipe/socket. */
-        if (n < 0) {
-            if (errno == EINTR)
-                continue;                                     /* Sinal interrompeu o read(): repete. */
-            break;                                            /* Outro erro: sai do loop. */
-        }
-        if (n == 0)
-            break;                                            /* EOF: pipe fechado / socket desligado. */
+    char c;                          /* Byte lido de cada vez com readn(). */
+    while (received < max) {         /* Repete até receber todos os resultados esperados. */
+        ssize_t n = readn(fd, &c, 1); /* Lê exactamente 1 byte; readn() trata EINTR internamente. */
+        if (n <= 0)                  /* readn() devolveu 0 (EOF) ou negativo (erro). */
+            break;                   /* Pipe fechado ou socket desligado: sai do loop. */
 
-        buf[n] = '\0';                                        /* Termina o buffer para segurança. */
-        for (ssize_t i = 0; i < n; i++) {                     /* Itera byte a byte no bloco recebido. */
-            char c = buf[i];
-            if (c == '\n' || c == '\r') {                     /* Fim de linha detectado. */
-                if (lpos == 0)
-                    continue;                                 /* Linha vazia: ignora. */
+        if (c == '\n' || c == '\r') { /* Byte é terminador de linha. */
+            if (lpos == 0)           /* Linha vazia (ex: '\r\n' consecutivos). */
+                continue;            /* Ignora e lê o próximo byte. */
 
-                line[lpos] = '\0';                            /* Termina a string da linha. */
-                lpos = 0;                                     /* Reset para a próxima linha. */
+            line[lpos] = '\0';       /* Termina a string com '\0' para usar com strncmp/parse. */
+            lpos = 0;                /* Reset do índice para começar a acumular a próxima linha. */
 
-                if (strncmp(line, "RESULT;", 7) == 0) {
-                    received += handle_result_line(line, results, received,
-                                                   max, statuses, n_workers);
-                    /* Deserializa o resultado e marca o worker como DONE. */
-                } else if (strncmp(line, "PROGRESS;", 9) == 0) {
-                    update_worker_progress(line, statuses, n_workers);
-                    /* Actualiza a percentagem do worker no dashboard. */
-                } else if (verbose && strncmp(line, "VERBOSE;", 8) == 0) {
-                    print_verbose_event(line);
-                    /* Em modo --verbose, imprime o evento crítico no terminal. */
-                }
+            if (strncmp(line, "RESULT;", 7) == 0)          /* Linha é resultado final do worker. */
+                received += handle_result_line(line, results, received,
+                                               max, statuses, n_workers);
+                /* Deserializa WorkerResult e marca o worker como DONE no dashboard. */
+            else if (strncmp(line, "PROGRESS;", 9) == 0)   /* Linha é actualização de progresso. */
+                update_worker_progress(line, statuses, n_workers);
+                /* Actualiza percentagem deste worker para redesenho do dashboard. */
+            else if (verbose && strncmp(line, "VERBOSE;", 8) == 0) /* Linha é evento crítico. */
+                print_verbose_event(line);
+                /* Em modo --verbose, imprime o evento HIGH/CRITICAL no terminal do pai. */
 
-                double t_now = phase1_now_secs();             /* Tempo actual em segundos. */
-                if (t_now - t_last >= 1.0) {                  /* Passou 1 segundo desde o último draw? */
-                    long errs = 0;
-                    for (int j = 0; j < received; j++)
-                        errs += results[j].count_error + results[j].count_critical;
-                    /* Soma erros ERROR + CRITICAL de todos os workers já terminados. */
-                    long lines = 0;
-                    for (int j = 0; j < n_workers; j++)
-                        lines += statuses[j].lines_processed;
-                    /* Soma as linhas processadas por todos os workers activos. */
-                    long eps = (t_now - t0 > 0) ? (long)(lines / (t_now - t0)) : 0;
-                    /* Calcula eventos por segundo desde o início. */
-                    if (!verbose)
-                        dashboard_draw(statuses, n_workers,
-                                       t_now - t0, eps, errs);
-                    /* Redesenha o dashboard (só fora de modo verbose). */
-                    t_last = t_now;                           /* Regista o momento deste draw. */
-                }
-            } else if (lpos < (int)sizeof(line) - 1) {
-                line[lpos++] = c;                             /* Acumula o carácter na linha actual. */
+            double t_now = phase1_now_secs();    /* Lê o tempo actual em segundos. */
+            if (t_now - t_last >= 1.0) {         /* Passou pelo menos 1 segundo desde o último draw. */
+                long errs = 0;
+                for (int j = 0; j < received; j++)
+                    errs += results[j].count_error + results[j].count_critical; /* Acumula erros graves. */
+                long lines = 0;
+                for (int j = 0; j < n_workers; j++)
+                    lines += statuses[j].lines_processed;    /* Acumula linhas de todos os workers. */
+                long eps = (t_now - t0 > 0) ? (long)(lines / (t_now - t0)) : 0; /* Linhas/segundo. */
+                if (!verbose)
+                    dashboard_draw(statuses, n_workers,
+                                   t_now - t0, eps, errs);  /* Redesenha o dashboard no terminal. */
+                t_last = t_now;      /* Regista o instante deste draw para o próximo intervalo. */
             }
+        } else if (lpos < (int)sizeof(line) - 1) {
+            line[lpos++] = c;        /* Byte normal: acumula na linha em construção. */
         }
     }
     return received;                                          /* Devolve o total de resultados recebidos. */
