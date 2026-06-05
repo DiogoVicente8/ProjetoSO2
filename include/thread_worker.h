@@ -1,50 +1,49 @@
-#ifndef THREAD_WORKER_H
+#ifndef THREAD_WORKER_H                            /* Guarda de inclusão. */
 #define THREAD_WORKER_H
- 
-#include <pthread.h>
-#include "../include/config.h"
-#include "../include/files.h"
-#include "../include/ipc.h"
-#include "../include/dashboard.h"
-#include "../include/worker.h"   /* LogFmt, FMT_* */
- 
+
+#include <pthread.h>                               /* pthread_mutex_t. */
+#include "../include/config.h"                     /* Config. */
+#include "../include/files.h"                      /* FileList. */
+#include "../include/ipc.h"                        /* WorkerResult, MAX_IP_LEN. */
+#include "../include/dashboard.h"                  /* WorkerStatus. */
+#include "../include/worker.h"                     /* LogFmt, FMT_* (reutilizados da Fase 1). */
+
 /* -----------------------------------------------------------------------
- * Resultado de cada worker thread (mesma estrutura do WorkerResult da
- * Fase 1, reutilizada para o relatório final)
+ * REQUISITO 2-A — Tabela de IPs por thread
+ *
+ * Cada worker thread mantém a SUA tabela (na stack), por isso esta entrada
+ * não precisa de sincronização. O resultado final é guardado no WorkerResult.
  * ----------------------------------------------------------------------- */
- 
-/* Tabela de IPs partilhada entre threads (com mutex próprio) */
-#define THREAD_IP_TABLE 512
- 
+#define THREAD_IP_TABLE 512                        /* Máximo de IPs distintos por thread. */
+
 typedef struct {
-    char ip[MAX_IP_LEN];
-    long count;
+    char ip[MAX_IP_LEN];                           /* Endereço IP. */
+    long count;                                    /* Nº de ocorrências. */
 } ThreadIPEntry;
- 
+
 /* -----------------------------------------------------------------------
- * Argumento passado a cada worker thread via pthread_create()
+ * REQUISITO 2-A — Argumento passado a cada worker thread via pthread_create()
+ *
+ * Contém tudo o que a thread precisa: a sua identidade, a lista de ficheiros,
+ * o mapa de atribuição, a config, o seu WorkerResult (escrito só por ela) e
+ * o ponteiro para o seu slot de status (partilhado com a thread de dashboard).
  * ----------------------------------------------------------------------- */
 typedef struct {
-    int            thread_id;      /* índice 0..N-1                        */
-    int            num_threads;    /* total de threads                      */
-    const FileList *fl;            /* lista de ficheiros (só leitura)       */
-    const int      *assignment;    /* assignment[i] = thread dono do file i */
-    const Config   *cfg;           /* configuração global (só leitura)      */
- 
-    /* Resultado acumulado por esta thread (escrito só por ela) */
-    WorkerResult   result;
- 
-    /* Dashboard: ponteiro para o slot desta thread no array de statuses */
-    WorkerStatus   *status;        /* atualizado pela thread, lido pelo pai */
-    pthread_mutex_t *status_mutex; /* protege o array de statuses           */
+    int            thread_id;      /* Índice 0..N-1 desta thread.            */
+    int            num_threads;    /* Total de threads.                      */
+    const FileList *fl;            /* Lista de ficheiros (só leitura).       */
+    const int      *assignment;    /* assignment[i] = thread dona do file i. */
+    const Config   *cfg;           /* Configuração global (só leitura).      */
+
+    WorkerResult   result;         /* Resultado desta thread (escrito só por ela). */
+
+    WorkerStatus   *status;        /* Slot de progresso (lido pelo dashboard). */
+    pthread_mutex_t *status_mutex; /* Mutex que protege o array de statuses.  */
 } ThreadArg;
- 
+
 /* -----------------------------------------------------------------------
- * Protótipos
+ * Protótipo: função executada por cada worker thread (assinatura pthread).
  * ----------------------------------------------------------------------- */
- 
-/* Função que cada worker thread executa (assinatura exigida por pthread) */
 void *thread_worker_run(void *arg);
- 
+
 #endif /* THREAD_WORKER_H */
- 
