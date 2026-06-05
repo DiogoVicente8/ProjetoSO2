@@ -397,7 +397,7 @@ int phase1_parent_setup_ipc(bool use_sockets, int num_procs,
             perror("listen");                              /* Coloca em escuta com fila de num_procs+2. */
             return -1;
         }
-    } else {
+    } else {// Criação de pipe anónimo para comunicação entre pai e filhos.
         int fds[2];                                        /* Array para os dois descritores do pipe. */
         if (pipe(fds) < 0) {
             perror("pipe");
